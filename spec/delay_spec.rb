@@ -136,6 +136,7 @@ describe ZeevexConcurrency::Delay do
     before do
       subject
       queue
+      pause_queue
 
       threads = []
       5.times do
