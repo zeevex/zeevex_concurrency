@@ -1,0 +1,10 @@
+#!/usr/bin/env ruby
+$: << File.join(File.dirname(__FILE__), "../lib")
+require 'pry'
+require 'zeevex_concurrency'
+require 'zeevex_concurrency/delayed'
+require 'zeevex_concurrency/future'
+require 'zeevex_concurrency/promise'
+require 'zeevex_concurrency/delay'
+
+binding.pry
