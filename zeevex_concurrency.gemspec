@@ -8,8 +8,8 @@ Gem::Specification.new do |gem|
   gem.version       = ZeevexConcurrency::VERSION
   gem.authors       = ["Robert Sanders"]
   gem.email         = ["robert@zeevex.com"]
-  gem.description   = %q{TODO: Write a gem description}
-  gem.summary       = %q{TODO: Write a gem summary}
+  gem.description   = %q{Concurrency utilities including Delays, Promises, Futures, Event Loops, Thread Pools, and Synchronizing wrappers}
+  gem.summary       = %q{Some concurrency utilities for Ruby}
   gem.homepage      = ""
 
   gem.files         = `git ls-files`.split($/)
@@ -17,10 +17,7 @@ Gem::Specification.new do |gem|
   gem.test_files    = gem.files.grep(%r{^(test|spec|features)/})
   gem.require_paths = ["lib"]
 
-  gem.add_dependency 'state_machine'
-  gem.add_dependency 'json'
   gem.add_dependency 'zeevex_proxy'
-  gem.add_dependency 'zeevex_threadsafe'
   gem.add_dependency 'countdownlatch', '~> 1.0.0'
   gem.add_dependency 'atomic', '~> 1.0.0'
 
@@ -30,6 +27,4 @@ Gem::Specification.new do |gem|
   gem.add_development_dependency 'rspec', '~> 2.9.0'
   gem.add_development_dependency 'rake'
   gem.add_development_dependency 'pry'
-
-
 end
