@@ -169,9 +169,9 @@ describe ZeevexConcurrency::ThreadPool do
 
     it 'should not return from join if backlogged tasks have not run' do
       count = parallelism + 2
-      count.times { pool.enqueue { queue.pop } }
+      count.times { pool.enqueue { sleep 10 } }
       expect {
-        Timeout::timeout(2) { pool.join }
+        Timeout::timeout(2) { Thread.pass; pool.join }
       }.to raise_error(TimeoutError)
     end
 
