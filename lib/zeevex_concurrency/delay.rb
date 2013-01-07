@@ -1,5 +1,6 @@
 require 'observer'
 require 'thread'
+require 'zeevex_concurrency'
 require 'zeevex_concurrency/delayed'
 
 class ZeevexConcurrency::Delay < ZeevexConcurrency::Delayed

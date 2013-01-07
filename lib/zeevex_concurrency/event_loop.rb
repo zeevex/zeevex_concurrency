@@ -1,4 +1,5 @@
 require 'thread'
+require 'zeevex_concurrency'
 require 'zeevex_concurrency/promise'
 
 module ZeevexConcurrency

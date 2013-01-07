@@ -2,6 +2,7 @@
 
 require 'thread'
 require 'zeevex_proxy'
+require 'zeevex_concurrency'
 
 # Wraps an object, synchronizes all method calls
 # The wrapped object can also be set and read out
