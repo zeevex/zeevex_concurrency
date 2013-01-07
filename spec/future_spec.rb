@@ -161,28 +161,50 @@ describe ZeevexConcurrency::Future do
   end
 
   context 'observing' do
-    subject { clazz.create(Proc.new { @callable.call }, :observer => observer) }
     let :observer do
       mock()
     end
 
-    #
-    #
-    #
-    it 'should notify observer after set_result' do
-      pause_futures
-      @callable = Proc.new { 10 }
-      observer.should_receive(:update).with(subject, 10, true)
-      resume_futures
-      wait_for_queue_to_empty
+    context 'registered before the future runs' do
+      subject { clazz.create(Proc.new { @callable.call }, :observer => observer) }
+      it 'should notify observer after set_result' do
+        pause_futures
+        @callable = Proc.new { 10 }
+        observer.should_receive(:update).with(subject, 10, true)
+        resume_futures
+        wait_for_queue_to_empty
+      end
+
+      it 'should notify observer after set_result raises exception' do
+        pause_futures
+        @callable = Proc.new { raise "foo" }
+        observer.should_receive(:update).with(subject, kind_of(Exception), false)
+        resume_futures
+        wait_for_queue_to_empty
+      end
     end
 
-    it 'should notify observer after set_result raises exception' do
-      pause_futures
-      @callable = Proc.new { raise "foo" }
-      observer.should_receive(:update).with(subject, kind_of(Exception), false)
-      resume_futures
-      wait_for_queue_to_empty
+    context 'after execution has completed' do
+      subject { clazz.create(Proc.new { @callable.call }) }
+      it 'should notify newly registered observer with value' do
+        @callable = Proc.new { 10 }
+        # cause future to be created and run
+        subject
+        observer.should_receive(:update).with(subject, 10, true)
+        subject.wait
+        subject.add_observer(observer)
+        wait_for_queue_to_empty
+      end
+
+      it 'should notify newly registered observer with exception' do
+        @callable = Proc.new { raise "foo" }
+        # cause future to be created and run
+        subject
+        observer.should_receive(:update).with(subject, kind_of(Exception), false)
+        subject.wait
+        subject.add_observer(observer)
+        wait_for_queue_to_empty
+      end
     end
   end
 

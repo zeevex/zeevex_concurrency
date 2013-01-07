@@ -1,6 +1,7 @@
 require 'thread'
 require 'countdownlatch'
 require 'zeevex_concurrency'
+require 'observer'
 #
 # base class for Promise, Future, etc.
 #
@@ -89,42 +90,83 @@ class ZeevexConcurrency::Delayed
   def _execute(computation)
     raise "Already executed" if executed?
     raise ArgumentError, "Cannot execute without computation" unless computation
-    success = false
+    @success = false
     begin
       result = computation.call
-      success = true
+      @success = true
     rescue Exception
-      _smash($!)
+      smash($!)
     end
     @executed = true
-    # run this separately so we can report exceptions in _fulfill rather than capture them
-    _fulfill_and_notify(result) if (success)
+    # run this separately so we can report exceptions in fulfill rather than capture them
+    fulfill(result) if (@success)
   rescue Exception
-    puts "*** exception in _fulfill: #{$!.inspect} ***"
+    puts "*** exception in fulfill: #{$!.inspect} #{$!.backtrace.join("\n")}***"
   ensure
     @executed = true
   end
 
-  def _fulfill_and_notify(value, success = true)
+  def fulfill(value, success = true)
     _fulfill(value, success)
-    if respond_to?(:notify_observers)
+  end
+
+  #
+  # not MT-safe; only to be called from executor thread
+  #
+  def smash(ex)
+    @exception = ex
+    fulfill ex, false
+  end
+
+  ###
+
+  module Observable
+    include ::Observable
+
+    def self.included(base)
+      base.class_eval do
+        alias_method :add_observer_without_history, :add_observer
+        alias_method :add_observer, :add_observer_with_history
+
+        alias_method :fulfill_without_notification, :fulfill
+        alias_method :fulfill, :fulfill_with_notification
+      end
+    end
+
+    #
+    # this ensures that an observer receives a value even after the value has
+    # become available
+    #
+    def add_observer_with_history(observer)
+      # we synchronize on exec_mutex to prevent races where the value arrives as we observe, so we
+      # miss the update
+      @exec_mutex.synchronize do
+        if ready?
+          # XXX: this is a bit hacky with both the functional and ivar access
+          observer.send(:update, self, value(false), @success)
+        else
+          add_observer_without_history(observer)
+        end
+      end
+    end
+
+    def fulfill_with_notification(value, success = true)
+      fulfill_without_notification(value, success)
+      _notify_and_remove_observers(value, success)
+    end
+
+    protected
+
+    def _notify_and_remove_observers(value, success)
       changed
       begin
         notify_observers(self, value, success)
+        delete_observers
       rescue Exception
         puts "Exception in notifying observers: #{$!.inspect}"
       end
     end
   end
-  #
-  # not MT-safe; only to be called from executor thread
-  #
-  def _smash(ex)
-    @exception = ex
-    _fulfill_and_notify ex, false
-  end
-
-  ###
 
   module LatchBased
     def wait(timeout = nil)
@@ -215,7 +257,7 @@ class ZeevexConcurrency::Delayed
         return false if executed?
         return true  if cancelled?
         @cancelled = true
-        _smash CancelledException.new
+        smash CancelledException.new
         true
       end
     end

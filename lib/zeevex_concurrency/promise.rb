@@ -1,9 +1,8 @@
-require 'observer'
 require 'timeout'
 require 'zeevex_concurrency/delayed'
 
 class ZeevexConcurrency::Promise < ZeevexConcurrency::Delayed
-  include Observable
+  include ZeevexConcurrency::Delayed::Observable
   include ZeevexConcurrency::Delayed::Bindable
   include ZeevexConcurrency::Delayed::LatchBased
 

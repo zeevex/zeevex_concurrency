@@ -1,14 +1,13 @@
-require 'observer'
 require 'timeout'
 require 'zeevex_concurrency/delayed'
 require 'zeevex_concurrency/event_loop'
 require 'zeevex_concurrency/thread_pool'
 
 class ZeevexConcurrency::Future < ZeevexConcurrency::Delayed
-  include Observable
   include ZeevexConcurrency::Delayed::Bindable
   include ZeevexConcurrency::Delayed::LatchBased
   include ZeevexConcurrency::Delayed::Cancellable
+  include ZeevexConcurrency::Delayed::Observable
 
   # @@worker_pool = ZeevexConcurrency::EventLoop.new
   @@worker_pool = ZeevexConcurrency::ThreadPool::FixedPool.new

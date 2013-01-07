@@ -129,6 +129,27 @@ describe ZeevexConcurrency::Promise do
       future.add_observer observer
       future.execute
     end
+
+    context 'after execution has completed' do
+      it 'should notify observer after set_result' do
+        observer.should_receive(:update).with(subject, 10, true)
+        subject.set_result { 10 }
+        subject.add_observer observer
+      end
+
+      it 'should notify observer after set_result raises exception' do
+        observer.should_receive(:update).with(subject, kind_of(Exception), false)
+        subject.set_result { raise "foo" }
+        subject.add_observer observer
+      end
+
+      it 'should notify observer after #execute' do
+        future = clazz.new(Proc.new { 4 + 20 })
+        observer.should_receive(:update)
+        future.execute
+        future.add_observer observer
+      end
+    end
   end
 
   context 'access from multiple threads' do

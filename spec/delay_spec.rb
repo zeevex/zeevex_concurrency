@@ -115,6 +115,19 @@ describe ZeevexConcurrency::Delay do
       edelay.add_observer observer
       edelay.value rescue nil
     end
+
+    it 'should notify observer added after value deref' do
+      observer.should_receive(:update).with(subject, 201, true)
+      subject.value
+      subject.add_observer observer
+    end
+
+    it 'should notify observer added after value deref raises exception' do
+      edelay = clazz.new(Proc.new { raise "foo" })
+      observer.should_receive(:update).with(edelay, kind_of(Exception), false)
+      edelay.value rescue nil
+      edelay.add_observer observer
+    end
   end
 
   context 'access from multiple threads' do

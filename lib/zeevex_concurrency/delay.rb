@@ -1,10 +1,9 @@
-require 'observer'
 require 'thread'
 require 'zeevex_concurrency'
 require 'zeevex_concurrency/delayed'
 
 class ZeevexConcurrency::Delay < ZeevexConcurrency::Delayed
-  include Observable
+  include ZeevexConcurrency::Delayed::Observable
   include ZeevexConcurrency::Delayed::Bindable
 
   def initialize(computation = nil, options = {}, &block)
