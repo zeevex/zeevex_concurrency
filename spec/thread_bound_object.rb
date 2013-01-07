@@ -24,13 +24,11 @@ describe ZeevexConcurrency::ThreadBoundObject do
     thread.kill
   end
 
-  # around :each do |ex|
-  #   Timeout::timeout(30) do
-  #     ex.run
-  #   end
-  # end
+  def bound_to_me(obj)
+    obj.instance_variable_get("@bound_thread_id").should == Thread.current.__id__
+  end
 
-  context 'argument checking' do
+  context 'constructor argument checking' do
     it 'should require an object' do
       expect { clazz.new }.
         to raise_error(ArgumentError)
@@ -45,6 +43,28 @@ describe ZeevexConcurrency::ThreadBoundObject do
     it 'should not accept a non-thread object to pre-bind to' do
       expect { clazz.new(obj, "foo") }.
         to raise_error(ArgumentError)
+    end
+
+    it 'should interpret a nil thread argument to mean "prebind to this thread"' do
+      obj = clazz.new(obj, nil)
+      obj.__bound?.should be_true
+      bound_to_me(obj).should be_true
+    end
+  end
+
+  context '#__bind' do
+    subject do
+      clazz.new(obj)
+    end
+    it 'should accept a thread argument' do
+      clazz.bind(subject, Thread.current)
+      subject.__bound?.should be_true
+      bound_to_me(subject).should be_true
+    end
+    it 'should interpret no arg to mean "this thread"' do
+      clazz.bind(subject)
+      subject.__bound?.should be_true
+      bound_to_me(subject).should be_true
     end
   end
 

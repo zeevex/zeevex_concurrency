@@ -21,9 +21,10 @@ module ZeevexConcurrency
   #
   class ThreadBoundObject < SimpleDelegator
     #
-    # Eagerly bind this object to a thread
+    # Eagerly bind this object to a thread. If nil or no thread arg provided,
+    # binds to current thread
     #
-    def self.bind(tbo, thread)
+    def self.bind(tbo, thread = nil)
       tbo.__bind_to_thread(thread)
     end
 
@@ -51,10 +52,10 @@ module ZeevexConcurrency
     # Prevent the object from receiving messages from ANY thread; used for
     # objects "in transit" between threads, e.g. on a channel or queue
     #
-
-    def initialize(obj, thread = nil)
+    #
+    def initialize(obj, thread = :unbound)
       super(obj)
-      __bind_to_thread(thread) if thread
+      __bind_to_thread(thread) if thread != :unbound
     end
 
     def __getobj__(ignore_binding = false)
@@ -66,8 +67,12 @@ module ZeevexConcurrency
       raise "__setobj__ not supported"
     end
 
-    def __bind_to_thread(thr)
-      raise ArgumentError, "Must provide thread" unless thr && thr.is_a?(Thread)
+    #
+    # Given no or a nil argument, binds to the current thread
+    #
+    def __bind_to_thread(thr = nil)
+      thr ||= Thread.current
+      raise ArgumentError, "Must provide thread" unless thr.is_a?(Thread)
       raise BindingError,  "Object is already bound" if __bound?
       __check_bindability
       @bound_thread_id = thr.__id__
