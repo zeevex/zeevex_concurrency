@@ -81,6 +81,22 @@ class ZeevexConcurrency::Delayed
 
   protected
 
+  def _initialize_delayed
+    @mutex       = Mutex.new
+    @exec_mutex  = Mutex.new
+    @exception   = nil
+    @result      = false
+    @executed    = false
+    @ready       = false
+    @success     = false
+
+    # from Cancellable
+    @cancelled   = false
+
+    # from Bindable
+    @binding     = false
+  end
+
   #
   # not MT-safe; only to be called from executor thread
   #

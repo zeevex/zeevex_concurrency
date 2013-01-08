@@ -8,12 +8,9 @@ class ZeevexConcurrency::Delay < ZeevexConcurrency::Delayed
   def initialize(computation = nil, options = {}, &block)
     raise ArgumentError, "Must provide computation or block for a future" unless (computation || block)
 
-    @mutex       = Mutex.new
-    @exec_mutex  = Mutex.new
-    @exception   = nil
-    @result      = false
-    @executed    = false
-
+    _initialize_delayed
+    @fulfilled_value = nil
+ 
     # has to happen after exec_mutex initialized
     bind(computation, &block)
   end

@@ -7,12 +7,8 @@ class ZeevexConcurrency::Promise < ZeevexConcurrency::Delayed
   include ZeevexConcurrency::Delayed::LatchBased
 
   def initialize(computation = nil, options = {}, &block)
-    @mutex       = Mutex.new
-    @exec_mutex  = Mutex.new
-    @exception   = nil
-    @result      = false
-    @executed    = false
 
+    _initialize_delayed
     _initialize_latch
 
     # has to happen after exec_mutex initialized
