@@ -50,16 +50,13 @@ class ZeevexConcurrency::Delayed
   end
 
   def value(reraise = true)
-    @mutex.synchronize do
-      unless @done
-        @result = _wait_for_value
-        @done   = true
-      end
-    end
+    result = _wait_for_value
     if @exception && reraise
       raise @exception
+    elsif @exception
+      @exception
     else
-      @result
+      result
     end
   end
 
@@ -95,11 +92,18 @@ class ZeevexConcurrency::Delayed
       result = computation.call
       @success = true
     rescue Exception
-      smash($!)
+      @success = false
+      @exception = $!
+    end
+    # run this separately so we can report exceptions in fulfill rather than capture them
+    @mutex.synchronize do
+      if @success
+        fulfill(result)
+      else
+        smash(@exception)
+      end
     end
     @executed = true
-    # run this separately so we can report exceptions in fulfill rather than capture them
-    fulfill(result) if (@success)
   rescue Exception
     puts "*** exception in fulfill: #{$!.inspect} #{$!.backtrace.join("\n")}***"
   ensure
@@ -138,9 +142,7 @@ class ZeevexConcurrency::Delayed
     # become available
     #
     def add_observer_with_history(observer)
-      # we synchronize on exec_mutex to prevent races where the value arrives as we observe, so we
-      # miss the update
-      @exec_mutex.synchronize do
+      @mutex.synchronize do
         if ready?
           # XXX: this is a bit hacky with both the functional and ivar access
           observer.send(:update, self, value(false), @success)
@@ -150,17 +152,17 @@ class ZeevexConcurrency::Delayed
       end
     end
 
-    def fulfill_with_notification(value, success = true)
-      fulfill_without_notification(value, success)
-      _notify_and_remove_observers(value, success)
+    def fulfill_with_notification(result, success = true)
+      fulfill_without_notification(result, success)
+      _notify_and_remove_observers(result, success)
     end
 
     protected
 
-    def _notify_and_remove_observers(value, success)
+    def _notify_and_remove_observers(result, success)
       changed
       begin
-        notify_observers(self, value, success)
+        notify_observers(self, result, success)
         delete_observers
       rescue Exception
         puts "Exception in notifying observers: #{$!.inspect}"
@@ -185,34 +187,13 @@ class ZeevexConcurrency::Delayed
 
     def _fulfill(value, success = true)
       @result = value
+      @ready  = true
       @_latch.countdown!
     end
 
     def _wait_for_value
       @_latch.wait
       @result
-    end
-  end
-
-  module QueueBased
-    def ready?
-      @exec_mutex.synchronize do
-        @queue.size > 0 || @executed
-      end
-    end
-
-    protected
-
-    def _initialize_queue
-      @queue = Queue.new
-    end
-
-    def _fulfill(value, success = true)
-      @queue << value
-    end
-
-    def _wait_for_value
-      @queue.pop
     end
   end
 

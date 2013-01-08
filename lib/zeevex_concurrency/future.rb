@@ -19,7 +19,6 @@ class ZeevexConcurrency::Future < ZeevexConcurrency::Delayed
     @mutex       = Mutex.new
     @exec_mutex  = Mutex.new
     @exception   = nil
-    @done        = false
     @result      = false
     @executed    = false
 
