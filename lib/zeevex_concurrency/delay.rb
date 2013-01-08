@@ -3,7 +3,6 @@ require 'zeevex_concurrency'
 require 'zeevex_concurrency/delayed'
 
 class ZeevexConcurrency::Delay < ZeevexConcurrency::Delayed
-  include ZeevexConcurrency::Delayed::Observable
   include ZeevexConcurrency::Delayed::Bindable
 
   def initialize(computation = nil, options = {}, &block)
@@ -12,16 +11,11 @@ class ZeevexConcurrency::Delay < ZeevexConcurrency::Delayed
     @mutex       = Mutex.new
     @exec_mutex  = Mutex.new
     @exception   = nil
-    @done        = false
     @result      = false
     @executed    = false
 
     # has to happen after exec_mutex initialized
     bind(computation, &block)
-
-    Array(options.delete(:observer) || options.delete(:observers)).each do |observer|
-      add_observer observer
-    end
   end
 
   def self.create(callable = nil, options = {}, &block)
@@ -44,7 +38,11 @@ class ZeevexConcurrency::Delay < ZeevexConcurrency::Delayed
   end
 
   def _wait_for_value
-    _execute(binding)
+    @exec_mutex.synchronize do
+      _execute(binding) unless @executed
+      should_execute = !@executing
+    end
+
     @fulfilled_value
   end
 end
