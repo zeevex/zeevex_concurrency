@@ -64,12 +64,15 @@ class ZeevexConcurrency::Multiplex
 
   def add_observer_with_history(observer)
     @mutex.synchronize do
-      add_observer observer
+      add_observer_without_history observer
       if ready?
         do_notify_observers
       end
     end
   end
+
+  alias_method :add_observer_without_history, :add_observer
+  alias_method :add_observer, :add_observer_with_history
 
   protected
 

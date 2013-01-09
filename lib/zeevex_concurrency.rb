@@ -18,6 +18,7 @@ module ZeevexConcurrency
   end
 end
 
+require 'thread'
 require 'zeevex_concurrency/synchronized'
 
 require 'logger'
