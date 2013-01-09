@@ -55,9 +55,12 @@ class ZeevexConcurrency::Multiplex
     @mutex.synchronize do
       if @waiting.delete(source)
         @complete << source
-        @latch.countdown!
+        do_complete if @latch.count == 1
 
-        do_complete if @count == 0
+        # release waiters
+        @latch.countdown!
+      else
+        STDERR.puts "Received update from non-waiting source: #{source.inspect}"
       end
     end
   end
@@ -84,7 +87,7 @@ class ZeevexConcurrency::Multiplex
 
   def do_notify_observers
     changed
-    notify_observers @complete
+    notify_observers self, @complete
     delete_observers
   end
 

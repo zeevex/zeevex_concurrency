@@ -2,6 +2,7 @@ require File.join(File.dirname(__FILE__), 'spec_helper')
 require 'zeevex_concurrency/future.rb'
 require 'zeevex_concurrency/multiplex.rb'
 require 'set'
+require 'countdownlatch'
 
 #
 # this test counts on a single-threaded worker pool
@@ -16,9 +17,14 @@ describe ZeevexConcurrency::Multiplex do
     loop = ZeevexConcurrency::ThreadPool::FixedPool.new(1)
   end
 
+  let :latch do
+    CountDownLatch.new(1)
+  end
+
   before :each do
     pause_queue
     queue
+    latch
     loop.start
     ZeevexConcurrency::Future.worker_pool = loop
   end
@@ -58,8 +64,6 @@ describe ZeevexConcurrency::Multiplex do
   clazz = ZeevexConcurrency::Multiplex
 
   context 'multiplex::first' do
-
-
     subject { clazz.new(@futures, 1) }
 
     it 'should not be ready if no futures are ready' do
@@ -94,6 +98,34 @@ describe ZeevexConcurrency::Multiplex do
       queue << 1
       subject.value
       subject.waiting.should == @futures[1..-1]
+    end
+
+    class BlockyObserver
+      def initialize(&block)
+        @block = block
+      end
+      def update(*args)
+        @block.call(*args)
+      end
+    end
+
+    it 'should notify when one future completes' do
+      pause_futures
+      subject.add_observer(BlockyObserver.new { latch.countdown! } )
+      queue << 1
+      resume_futures
+      subject.wait
+      # we're assuming that all observers have been run by the time wait returns
+      # otherwise we'd have to wait on the latch as well to be sure that our observer
+      # ran
+      latch.count.should == 0
+    end
+
+    it 'should notify when one future completes' do
+      queue << 1
+      subject.wait
+      subject.add_observer(BlockyObserver.new { latch.countdown! } )
+      latch.count.should == 0
     end
   end
 
@@ -155,7 +187,25 @@ describe ZeevexConcurrency::Multiplex do
 
     it 'should provide access to the set of unfinished futures after one has completed' do
       3.times { queue << 1 }
-      subject.wait(1).should == false
+      subject.wait(0.5).should == false
+    end
+
+    it 'should not notify when first future completes' do
+      pause_futures
+      subject.add_observer(BlockyObserver.new { latch.countdown! } )
+      queue << 1
+      resume_futures
+      sleep 0.3
+      latch.count.should == 1
+    end
+
+    it 'should notify only when all futures complete' do
+      pause_futures
+      subject.add_observer(BlockyObserver.new { latch.countdown! } )
+      4.times { queue << 1 }
+      resume_futures
+      subject.wait
+      latch.count.should == 0
     end
   end
 
