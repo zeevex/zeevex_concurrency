@@ -63,8 +63,8 @@ module ZeevexConcurrency::ThreadPool
   class EventLoopAdapter
     include Stubs
 
-    def initialize(loop = nil)
-      @loop ||= ZeevexConcurrency::EventLoop.new
+    def initialize(loop = nil, options = {})
+      @loop ||= ZeevexConcurrency::EventLoop.new(:queue => options.delete(:queue))
       start
     end
 
@@ -130,8 +130,8 @@ module ZeevexConcurrency::ThreadPool
     include Stubs
 
     def initialize
-      @mutex = Mutex.new
-      @group = ThreadGroup.new
+      @mutex      = Mutex.new
+      @group      = ThreadGroup.new
       @busy_count = Atomic.new(0)
 
       start
@@ -180,9 +180,7 @@ module ZeevexConcurrency::ThreadPool
       false
     end
 
-    def worker_count
-      @busy_count.value
-    end
+    alias_method :worker_count, :busy_count
   end
 
   #
@@ -191,12 +189,12 @@ module ZeevexConcurrency::ThreadPool
   class FixedPool
     include Stubs
 
-    def initialize(count = -1)
-      if count == -1
+    def initialize(count = -1, options = {})
+      if count.nil? || count == -1
         count = ZeevexConcurrency::ThreadPool.cpu_count * 2
       end
       @count = count
-      @queue = Queue.new
+      @queue = options.delete(:queue) || Queue.new
       @mutex = Mutex.new
       @group = ThreadGroup.new
       @busy_count = Atomic.new(0)
