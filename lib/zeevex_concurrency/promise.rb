@@ -23,4 +23,18 @@ class ZeevexConcurrency::Promise < ZeevexConcurrency::Delayed
     return callable if callable && callable.is_a?(ZeevexConcurrency::Delayed)
     new(callable, options, &block)
   end
+
+  def set_result(&block)
+    @exec_mutex.synchronize do
+      raise ArgumentError, "Must supply block" unless block_given?
+      raise ArgumentError, "Already supplied block" if bound?
+      raise ArgumentError, "Promise already executed" if executed?
+
+      _execute(block)
+    end
+  end
+
+  def <<(value)
+    set_result { value }
+  end
 end

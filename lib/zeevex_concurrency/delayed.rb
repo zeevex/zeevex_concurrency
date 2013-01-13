@@ -69,16 +69,6 @@ class ZeevexConcurrency::Delayed
     false
   end
 
-  def set_result(&block)
-    @exec_mutex.synchronize do
-      raise ArgumentError, "Must supply block" unless block_given?
-      raise ArgumentError, "Already supplied block" if bound?
-      raise ArgumentError, "Promise already executed" if executed?
-
-      _execute(block)
-    end
-  end
-
   protected
 
   def _initialize_delayed
