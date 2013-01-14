@@ -254,6 +254,15 @@ class ZeevexConcurrency::Delayed
     end
   end
 
+  module Dataflowable
+    def self.included(base)
+      require 'zeevex_concurrency/dataflow'
+    end
+    def to_dataflow
+      ZeevexConcurrency::Dataflow.new(self)
+    end
+  end
+
   class CancelledException < StandardError; end
 end
 

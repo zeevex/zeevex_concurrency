@@ -8,6 +8,7 @@ class ZeevexConcurrency::Future < ZeevexConcurrency::Delayed
   include ZeevexConcurrency::Delayed::LatchBased
   include ZeevexConcurrency::Delayed::Cancellable
   include ZeevexConcurrency::Delayed::Observable
+  include ZeevexConcurrency::Delayed::Dataflowable
 
   # @@worker_pool = ZeevexConcurrency::EventLoop.new
   @@worker_pool = ZeevexConcurrency::ThreadPool::FixedPool.new

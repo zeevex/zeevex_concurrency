@@ -5,6 +5,7 @@ class ZeevexConcurrency::Promise < ZeevexConcurrency::Delayed
   include ZeevexConcurrency::Delayed::Observable
   include ZeevexConcurrency::Delayed::Bindable
   include ZeevexConcurrency::Delayed::LatchBased
+  include ZeevexConcurrency::Delayed::Dataflowable
 
   def initialize(computation = nil, options = {}, &block)
 
