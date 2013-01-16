@@ -101,6 +101,12 @@ describe 'Dataflow variables' do
       result.should_receive(:class).and_return(73)
       subject.class.should == 73
     end
+
+    it 'should forward methods defined on underlying Future' do
+      methods = [:value, :wait, :ready?, :add_observer]
+      methods.each {|meth| result.should_receive meth }
+      methods.each {|meth| subject.send meth }
+    end
   end
 
 end
