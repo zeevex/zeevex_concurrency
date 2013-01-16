@@ -19,12 +19,12 @@ module ZeevexConcurrency
 end
 
 require 'thread'
-require 'zeevex_concurrency/synchronized'
+require 'zeevex_concurrency/locks/synchronized'
 
 require 'logger'
-require 'zeevex_concurrency/nil_logger'
+require 'zeevex_concurrency/util/nil_logger'
 
 ZeevexConcurrency.logger = ZeevexConcurrency::NilLogger.new
 
-require 'zeevex_concurrency/logging'
-require 'zeevex_concurrency/event_loop'
+require 'zeevex_concurrency/util/logging'
+require 'zeevex_concurrency/executors/event_loop'

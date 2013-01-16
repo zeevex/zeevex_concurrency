@@ -1,5 +1,5 @@
-require File.join(File.dirname(__FILE__), 'spec_helper')
-require 'zeevex_concurrency/delay.rb'
+require File.join(File.dirname(__FILE__), '../spec_helper')
+require 'zeevex_concurrency/deferred/delay.rb'
 
 describe ZeevexConcurrency::Delay do
   clazz = ZeevexConcurrency::Delay

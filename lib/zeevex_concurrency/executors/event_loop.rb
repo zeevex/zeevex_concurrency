@@ -1,6 +1,6 @@
 require 'thread'
 require 'zeevex_concurrency'
-require 'zeevex_concurrency/promise'
+require 'zeevex_concurrency/deferred/promise'
 
 module ZeevexConcurrency
   class EventLoop

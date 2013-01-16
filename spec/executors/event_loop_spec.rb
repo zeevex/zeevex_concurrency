@@ -1,6 +1,6 @@
-require File.join(File.dirname(__FILE__), 'spec_helper')
-require 'zeevex_concurrency/promise.rb'
-require 'zeevex_concurrency/event_loop.rb'
+require File.join(File.dirname(__FILE__), '../spec_helper')
+require 'zeevex_concurrency/deferred/promise.rb'
+require 'zeevex_concurrency/executors/event_loop.rb'
 
 describe ZeevexConcurrency::EventLoop do
   let :loop do

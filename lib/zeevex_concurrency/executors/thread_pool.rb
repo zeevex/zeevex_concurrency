@@ -1,5 +1,5 @@
 require 'zeevex_concurrency'
-require 'zeevex_concurrency/event_loop'
+require 'zeevex_concurrency/executors/event_loop'
 require 'countdownlatch'
 require 'thread'
 require 'atomic'

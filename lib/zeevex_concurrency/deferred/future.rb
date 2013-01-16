@@ -1,7 +1,7 @@
 require 'timeout'
-require 'zeevex_concurrency/delayed'
-require 'zeevex_concurrency/event_loop'
-require 'zeevex_concurrency/thread_pool'
+require 'zeevex_concurrency/deferred/delayed'
+require 'zeevex_concurrency/executors/event_loop'
+require 'zeevex_concurrency/executors/thread_pool'
 
 class ZeevexConcurrency::Future < ZeevexConcurrency::Delayed
   include ZeevexConcurrency::Delayed::Bindable

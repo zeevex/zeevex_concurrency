@@ -1,5 +1,5 @@
-require File.join(File.dirname(__FILE__), 'spec_helper')
-require 'zeevex_concurrency/thread_bound_object.rb'
+require File.join(File.dirname(__FILE__), '../spec_helper')
+require 'zeevex_concurrency/scope/thread_bound_object.rb'
 require 'thread'
 
 describe ZeevexConcurrency::ThreadBoundObject do

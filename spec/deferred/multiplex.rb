@@ -1,6 +1,6 @@
-require File.join(File.dirname(__FILE__), 'spec_helper')
-require 'zeevex_concurrency/future.rb'
-require 'zeevex_concurrency/multiplex.rb'
+require File.join(File.dirname(__FILE__), '../spec_helper')
+require 'zeevex_concurrency/deferred/future.rb'
+require 'zeevex_concurrency/deferred/multiplex.rb'
 require 'set'
 require 'countdownlatch'
 

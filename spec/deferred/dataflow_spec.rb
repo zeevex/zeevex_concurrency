@@ -1,8 +1,8 @@
 require File.join(File.dirname(__FILE__), '../spec_helper')
-require 'zeevex_concurrency/future.rb'
-require 'zeevex_concurrency/dataflow.rb'
-require 'zeevex_concurrency/event_loop.rb'
-require 'zeevex_concurrency/thread_pool.rb'
+require 'zeevex_concurrency/deferred/future.rb'
+require 'zeevex_concurrency/deferred/dataflow.rb'
+require 'zeevex_concurrency/executors/event_loop.rb'
+require 'zeevex_concurrency/executors/thread_pool.rb'
 
 #
 # this test counts on a single-threaded worker pool

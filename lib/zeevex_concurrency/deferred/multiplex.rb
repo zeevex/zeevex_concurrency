@@ -1,7 +1,7 @@
 require 'timeout'
 require 'observer'
 require 'countdownlatch'
-require 'zeevex_concurrency/delayed'
+require 'zeevex_concurrency/deferred/delayed'
 
 class ZeevexConcurrency::Multiplex
   include Observable

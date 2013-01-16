@@ -256,7 +256,7 @@ class ZeevexConcurrency::Delayed
 
   module Dataflowable
     def self.included(base)
-      require 'zeevex_concurrency/dataflow'
+      require 'zeevex_concurrency/deferred/dataflow'
     end
     def to_dataflow
       ZeevexConcurrency::Dataflow.new(self)
