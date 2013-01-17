@@ -9,39 +9,34 @@ require 'zeevex_concurrency'
 #   which means this can also be used as a thread-safe reference
 #   (like a 'volatile' variable in Java)
 class ZeevexConcurrency::Synchronized < ZeevexProxy::Base
-  def initialize(obj)
-    super
-    @mutex = ::Mutex.new
+  def initialize(obj, mutex = nil)
+    super(obj)
+    @mutex = mutex || ::Mutex.new
+    freeze
   end
 
-  def _set_synchronized_object(val)
-    @mutex.synchronize { @obj = val }
-  end
   def _get_synchronized_object
     @mutex.synchronize { @obj }
   end
 
   def respond_to?(method)
-    if [:_set_synchronized_object, :_get_synchronized_object].include?(method.to_sym)
-      true
-    else
-      @obj.respond_to?(method)
-    end
+    @obj.respond_to?(method) ||
+        [:_get_synchronized_object].include?(method.to_sym)
   end
 
   def method_missing(method, *args, &block)
     result = @mutex.synchronize { @obj.__send__(method, *args, &block) }
-    # result.__id__ == @obj.__id__ ? self : result
+    result.__id__ == @obj.__id__ ? self : result
   end
 end
 
 #
 # make object synchronized unless already synchronized
 #
-def ZeevexConcurrency.Synchronized(obj)
+def ZeevexConcurrency.Synchronized(obj, mutex = nil)
   if obj.respond_to?(:_get_synchronized_object)
     obj
   else
-    ZeevexConcurrency::Synchronized.new(obj)
+    ZeevexConcurrency::Synchronized.new(obj, mutex)
   end
 end
