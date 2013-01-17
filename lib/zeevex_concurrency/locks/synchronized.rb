@@ -12,21 +12,28 @@ class ZeevexConcurrency::Synchronized < ZeevexProxy::Base
   def initialize(obj, mutex = nil)
     super(obj)
     @mutex = mutex || ::Mutex.new
-    freeze
-  end
-
-  def _get_synchronized_object
-    @mutex.synchronize { @obj }
   end
 
   def respond_to?(method)
-    @obj.respond_to?(method) ||
-        [:_get_synchronized_object].include?(method.to_sym)
+    __getobj__.respond_to?(method) ||
+        [:__getobj__, :marshal_dump, :marshal_load].include?(method.to_sym)
   end
 
   def method_missing(method, *args, &block)
-    result = @mutex.synchronize { @obj.__send__(method, *args, &block) }
-    result.__id__ == @obj.__id__ ? self : result
+    obj = __getobj__
+    result = @mutex.synchronize {
+      obj.__send__(method, *args, &block)
+    }
+    result.__id__ == obj.__id__ ? self : result
+  end
+
+  def marshal_dump(*args)
+    __getobj__
+  end
+
+  def marshal_load(obj)
+    @__proxy_object__ = obj
+    @mutex = ::Mutex.new
   end
 end
 
@@ -34,7 +41,7 @@ end
 # make object synchronized unless already synchronized
 #
 def ZeevexConcurrency.Synchronized(obj, mutex = nil)
-  if obj.respond_to?(:_get_synchronized_object)
+  if obj.respond_to?(:__getobj__)
     obj
   else
     ZeevexConcurrency::Synchronized.new(obj, mutex)
