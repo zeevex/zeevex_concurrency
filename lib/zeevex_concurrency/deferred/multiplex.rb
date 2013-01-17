@@ -1,6 +1,7 @@
 require 'timeout'
 require 'observer'
 require 'countdownlatch'
+require 'zeevex_concurrency'
 require 'zeevex_concurrency/deferred/delayed'
 
 class ZeevexConcurrency::Multiplex
@@ -13,6 +14,7 @@ class ZeevexConcurrency::Multiplex
     @dependencies = dependencies.clone.freeze
     @waiting      = dependencies.clone
     @complete     = []
+    @result       = nil
 
     @latch        = CountDownLatch.new(count || @dependencies.length)
 
@@ -35,7 +37,7 @@ class ZeevexConcurrency::Multiplex
 
   def value(timeout = nil)
     wait(timeout)
-    @complete.dup
+    @result.dup
   end
 
   def dependencies
@@ -80,14 +82,13 @@ class ZeevexConcurrency::Multiplex
   protected
 
   def do_complete
-    @waiting.freeze
-    @complete.freeze
+    @result = @complete.dup.freeze
     do_notify_observers
   end
 
   def do_notify_observers
     changed
-    notify_observers self, @complete
+    notify_observers self, @complete.clone
     delete_observers
   end
 

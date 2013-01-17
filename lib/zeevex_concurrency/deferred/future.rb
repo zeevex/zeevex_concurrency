@@ -1,4 +1,5 @@
 require 'timeout'
+require 'zeevex_concurrency'
 require 'zeevex_concurrency/deferred/delayed'
 require 'zeevex_concurrency/executors/event_loop'
 require 'zeevex_concurrency/executors/thread_pool'

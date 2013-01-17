@@ -171,7 +171,7 @@ class ZeevexConcurrency::Delayed
         notify_observers(self, result, success)
         delete_observers
       rescue Exception
-        puts "Exception in notifying observers: #{$!.inspect}"
+        puts "Exception in notifying observers: #{$!.inspect} #{$!.backtrace.join("\n")}"
       end
     end
   end
