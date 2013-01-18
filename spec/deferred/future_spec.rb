@@ -413,18 +413,14 @@ describe ZeevexConcurrency::Future do
     #end
   end
 
-  context '#map' do
+  context 'map module' do
     let :observer do
       mock('observer')
     end
     let :base do
       clazz.create(Proc.new {@callable.call})
     end
-    subject do
-      base.map do |val|
-        @map_callable.call(val)
-      end
-    end
+
 
     before do
       pause_futures
@@ -438,49 +434,102 @@ describe ZeevexConcurrency::Future do
       wait_for_queue_to_empty
     end
 
-    it 'should be a future' do
-      subject.should be_a(clazz)
-    end
-
-    it 'should be a new future' do
-      subject.__id__.should_not == base.__id__
-    end
-
-    it 'should not be ready until base future is ready' do
-      subject.should_not be_ready
-    end
-
-    it 'should return the proper value' do
-      resume_futures
-      subject.value.should == 20
-    end
-
-    it 'should call onsuccess' do
-      ons = mock('onsuccess')
-      ons.should_receive(:done).with(20)
-      subject.onSuccess {|val| ons.done(val) }
-      finish_test
-    end
-
-    context 'failure' do
-      before do
-        @callable     = lambda { raise "foo" }
-        @map_callable = lambda { observer.skip }
+    context '#map' do
+      subject do
+        base.map do |val|
+          @map_callable.call(val)
+        end
       end
-      
-      it 'should fail without executing block if base future fails' do
-        observer.should_not_receive(:skip)
+      it 'should be a future' do
+        subject.should be_a(clazz)
+      end
+
+      it 'should be a new future' do
+        subject.__id__.should_not == base.__id__
+      end
+
+      it 'should not be ready until base future is ready' do
+        subject.should_not be_ready
+      end
+
+      it 'should return the proper value' do
+        resume_futures
+        subject.value.should == 20
+      end
+
+      it 'should call onsuccess' do
+        ons = mock('onsuccess')
+        ons.should_receive(:done).with(20)
+        subject.onSuccess {|val| ons.done(val) }
         finish_test
       end
 
-      it 'should return an exception' do
-        resume_futures
-        base.value(false).should be_a(Exception)
+      context 'failure' do
+        before do
+          @callable     = lambda { raise "foo" }
+          @map_callable = lambda { observer.skip }
+        end
+
+        it 'should fail without executing block if base future fails' do
+          observer.should_not_receive(:skip)
+          finish_test
+        end
+
+        it 'should return an exception' do
+          resume_futures
+          base.value(false).should be_a(Exception)
+        end
+
+        it 'should return the same exception that was raised in base' do
+          resume_futures
+          base.value(false).should == subject.value(false)
+        end
+
+      end
+    end
+
+    context '#fallbackTo' do
+      subject do
+        base.fallback_to do
+          @fallback_callable.call
+        end
       end
 
-      it 'should return the same exception that was raised in base' do
-        resume_futures
-        base.value(false).should == subject.value(false)
+      it { should be_a(ZeevexConcurrency::Future) }
+
+      context 'when original future succeeds' do
+        it 'should return value of original future on success' do
+          @callable = lambda { 77 }
+          resume_futures
+          subject.value.should == 77
+        end
+
+        it 'should not execute fallbackTo block on success' do
+          @callable = lambda { 77 }
+          @fallback_callable = lambda { observer.fail }
+          observer.should_not_receive :fail
+          resume_futures
+          subject
+        end
+      end
+
+      context 'when original future fails' do
+        before do
+          @callable = lambda { raise "foo" }
+          @fallback_callable = lambda { observer.fellback }
+        end
+        it 'should execute fallbackTo block on base failure' do
+          observer.should_receive(:fellback).and_return(65)
+          resume_futures
+          subject.value.should == 65
+          base.value(false).should be_a(Exception)
+        end
+        it 'should return fallbackTo block on base failure' do
+          @fallback_callable = lambda { raise ArgumentError, "inner" }
+          resume_futures
+          expect { subject.value }.to raise_error
+          subject.value(false).should be_a(ArgumentError)
+        end
       end
 
     end

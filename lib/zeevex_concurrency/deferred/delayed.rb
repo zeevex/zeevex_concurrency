@@ -251,6 +251,14 @@ class ZeevexConcurrency::Delayed
       new_future
     end
 
+    def fallback_to(&block)
+      new_future = ZeevexConcurrency::Future.new {}
+      self.onComplete do |val, success|
+        new_future._fallback_completion(val, success, block)
+      end
+      new_future
+    end
+
     protected
 
     def _map_completion(value, success, block)
@@ -264,7 +272,20 @@ class ZeevexConcurrency::Delayed
 
       ZeevexConcurrency::Future.worker_pool.enqueue self
     end
+
+    def _fallback_completion(value, success, block)
+      @binding = Proc.new do
+        if success
+          value
+        else
+          block.call
+        end
+      end
+
+      ZeevexConcurrency::Future.worker_pool.enqueue self
+    end
   end
+
 
   module LatchBased
     def wait(timeout = nil)
