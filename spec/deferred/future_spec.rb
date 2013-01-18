@@ -473,7 +473,7 @@ describe ZeevexConcurrency::Future do
 
         it 'should return an exception' do
           resume_futures
-          base.value(false).should be_a(Exception)
+          subject.value(false).should be_a(Exception)
         end
 
         it 'should return the same exception that was raised in base' do
@@ -608,6 +608,69 @@ describe ZeevexConcurrency::Future do
           expect { subject.value }.to raise_error(IOError)
         end
       end
+    end
+
+    context '#flatMap' do
+      # we'll have one future waiting on another, so we need some actual concurrency
+      # in these tests
+      let :loop do
+        loop = ZeevexConcurrency::ThreadPool::FixedPool.new(4)
+      end
+
+      subject do
+        base.flat_map do |val|
+          @map_callable.call(val)
+        end
+      end
+      before do
+        @callable     = lambda { 200 }
+        @map_callable = lambda { |x| ZeevexConcurrency.future { x + 40 } }
+      end
+      it 'should be a future' do
+        subject.should be_a(clazz)
+      end
+      it 'should not be ready until base future is ready' do
+        subject.should_not be_ready
+      end
+      it 'should return the proper value, not a future' do
+        resume_futures
+        subject.value.should == 240
+      end
+
+      context 'failure in base future' do
+        before do
+          @callable     = lambda { raise ArgumentError, "foo" }
+        end
+        it 'should return an exception' do
+          resume_futures
+          subject.value(false).should be_a(ArgumentError)
+        end
+        it 'should return the same exception that was raised in base' do
+          resume_futures
+          base.value(false).should == subject.value(false)
+        end
+      end
+
+      context 'failure in outer mapped future' do
+        before do
+          @map_callable = lambda { |x| raise ArgumentError, "foo" }
+        end
+        it 'should return an exception' do
+          resume_futures
+          subject.value(false).should be_a(ArgumentError)
+        end
+      end
+
+      context 'failure in inner mapped future' do
+        before do
+          @map_callable = lambda { |x| ZeevexConcurrency.future { raise ArgumentError, "foo" } }
+        end
+        it 'should return an exception' do
+          resume_futures
+          subject.value(false).should be_a(ArgumentError)
+        end
+      end
+
     end
 
   end

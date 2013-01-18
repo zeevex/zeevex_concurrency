@@ -77,6 +77,12 @@ class ZeevexConcurrency::Future < ZeevexConcurrency::Delayed
     end
   end
 
+  module FlatMap
+    def flat_map(&block)
+      map { |input| block.call(input).value }
+    end
+  end
+
   module Fallback
      def fallback_to(&block)
       new_future = ZeevexConcurrency::Future.new {}
@@ -155,6 +161,7 @@ class ZeevexConcurrency::Future < ZeevexConcurrency::Delayed
   end
 
   include Map
+  include FlatMap
   include Fallback
   include Transform
   include Filter
