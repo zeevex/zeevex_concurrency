@@ -224,7 +224,6 @@ class ZeevexConcurrency::Delayed
     protected
 
     def add_callback(callback, observer)
-      puts "adding callback for #{callback}"
       @_callbacks ||= {}
       (@_callbacks[callback] ||= []).push observer
     end
@@ -232,6 +231,7 @@ class ZeevexConcurrency::Delayed
     def run_callback(callback, *args)
       return unless @_callbacks
       (@_callbacks[callback] || []).each { |cb| cb.call(*args) }
+      @_callbacks[callback] = []
     end
 
     def fulfill_with_callbacks(result, success = true)
