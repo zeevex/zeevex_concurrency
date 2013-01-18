@@ -47,6 +47,10 @@ class ZeevexConcurrency::Multiplex
     end
   end
 
+  def as_future(raise_if_failed = true)
+    ZeevexConcurrency.future { self.value(raise_if_failed) }
+  end
+
   def dependencies
     @dependencies
   end
@@ -118,13 +122,44 @@ class ZeevexConcurrency::Multiplex
 
   public
 
+  # return a future which contains the value of the first future to complete
   def self.first_of(*futures)
-    ZeevexConcurrency.future { new(futures, 1).value.first.value }
+    options = futures.last.is_a?(Hash) ? futures.pop : {}
+    # ZeevexConcurrency.future { new(futures, 1, options).value.first.value }
+    new(futures, 1, options).as_future.flat_map {|list| list.first }
   end
 
-  def self.either(future1, future2)
-    first_of(future1, future2)
+  # return a future which contains the value of the first future to complete
+  def self.either(future1, future2, options = {})
+    first_of(future1, future2, options)
   end
 
+  #
+  # Return a list of all the values of all non-filtered futures after all futures have finished.
+  # If there are any errors, this future will also contain that error
+  #
+  def self.all(*futures)
+    options = futures.last.is_a?(Hash) ? futures.pop : {}
+    # ZeevexConcurrency.future { new(futures, futures.length, options).value.map &:value }
+    new(futures, futures.length, options).as_future.map {|list| list.map &:value }
+  end
+
+  # gives all futures a chance to finish, but only returns the values from the
+  # successful ones
+  def self.successes(*futures)
+    options = futures.last.is_a?(Hash) ? futures.pop : {}
+
+    new(futures, futures.length, options).as_future(false).map do |flist|
+      flist.flat_map do |f|
+        [f.value] rescue []
+      end
+    end
+
+    #ZeevexConcurrency.future do
+    #  new(futures, futures.length, options).value(false).flat_map do |f|
+    #    [f.value] rescue []
+    #  end
+    #end
+  end
 end
 
