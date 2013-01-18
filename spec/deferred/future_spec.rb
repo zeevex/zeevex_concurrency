@@ -334,5 +334,83 @@ describe ZeevexConcurrency::Future do
       list.should == [21,21,21,21,21]
     end
   end
+
+
+
+  context 'callbacks' do
+    let :observer do
+      mock('observer')
+    end
+    subject do
+      clazz.create(Proc.new {@callable.call}).onSuccess do |val|
+        observer.succeed(val)
+      end.onFailure do |val|
+        observer.fail(val)
+      end.onComplete do |val, successFlag|
+        observer.complete(val, successFlag)
+      end
+    end
+
+    before do
+      pause_futures
+    end
+
+    def finish_test
+      subject
+      resume_futures
+      wait_for_queue_to_empty
+    end
+
+    context 'registered before the future runs' do
+      it 'should notify onSuccess observer' do
+        @callable = Proc.new { 10 }
+        observer.should_receive(:complete).with(10, true)
+        observer.should_receive(:succeed).with(10)
+        finish_test
+      end
+
+      it 'should notify onFailure observer after set_result raises exception' do
+        @callable = Proc.new { raise "foo" }
+        observer.should_receive(:complete).with(kind_of(Exception), false)
+        observer.should_receive(:fail).with(kind_of(Exception))
+        finish_test
+      end
+
+      it 'should notify onCompletion observer on success' do
+        @callable = Proc.new { 10 }
+        observer.should_receive(:complete).with(10, true)
+        finish_test
+      end
+
+      it 'should notify onCompletion observer after set_result raises exception' do
+        @callable = Proc.new { raise "foo" }
+        observer.should_receive(:complete).with(kind_of(Exception), false)
+        finish_test
+      end
+    end
+
+    #context 'after execution has completed' do
+    #  subject { clazz.create(Proc.new { @callable.call }) }
+    #  it 'should notify newly registered observer with value' do
+    #    @callable = Proc.new { 10 }
+    #    # cause future to be created and run
+    #    subject
+    #    observer.should_receive(:update).with(subject, 10, true)
+    #    subject.wait
+    #    subject.add_observer(observer)
+    #    wait_for_queue_to_empty
+    #  end
+    #
+    #  it 'should notify newly registered observer with exception' do
+    #    @callable = Proc.new { raise "foo" }
+    #    # cause future to be created and run
+    #    subject
+    #    observer.should_receive(:update).with(subject, kind_of(Exception), false)
+    #    subject.wait
+    #    subject.add_observer(observer)
+    #    wait_for_queue_to_empty
+    #  end
+    #end
+  end
 end
 

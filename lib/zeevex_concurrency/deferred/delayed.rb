@@ -176,6 +176,72 @@ class ZeevexConcurrency::Delayed
     end
   end
 
+  module Callbacks
+    def self.included(base)
+      base.class_eval do
+        alias_method :fulfill_without_callbacks, :fulfill
+        alias_method :fulfill, :fulfill_with_callbacks
+      end
+    end
+
+    #
+    # this ensures that an observer receives a value even after the value has
+    # become available
+    #
+    def onSuccess(&observer)
+      @mutex.synchronize do
+        if ready? && @success
+          observer.call(value(false))
+        else
+          add_callback(:success, observer)
+        end
+      end
+      self
+    end
+
+    def onFailure(&observer)
+      @mutex.synchronize do
+        if ready? && !@success
+          observer.call(value(false))
+        else
+          add_callback(:failure, observer)
+        end
+      end
+      self
+    end
+
+    def onComplete(&observer)
+      @mutex.synchronize do
+        if ready?
+          observer.call(value(false), @success)
+        else
+          add_callback(:completion, observer)
+        end
+      end
+      self
+    end
+
+    protected
+
+    def add_callback(callback, observer)
+      puts "adding callback for #{callback}"
+      @_callbacks ||= {}
+      (@_callbacks[callback] ||= []).push observer
+    end
+
+    def run_callback(callback, *args)
+      return unless @_callbacks
+      (@_callbacks[callback] || []).each { |cb| cb.call(*args) }
+    end
+
+    def fulfill_with_callbacks(result, success = true)
+      fulfill_without_notification(result, success)
+      run_callback(:completion, result, success)
+      run_callback(success ? :success : :failure, result)
+    end
+
+  end
+
   module LatchBased
     def wait(timeout = nil)
       @_latch.wait(timeout)
