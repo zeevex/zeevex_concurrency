@@ -753,7 +753,25 @@ describe ZeevexConcurrency::Future do
           subject.value(false).should be_a(ArgumentError)
         end
       end
+    end
 
+    context '#for_each' do
+      before do
+        @res = 0
+      end
+      it 'should invoke the block on the value of a successful future' do
+        fut = clazz.create { 1975 }
+        resume_futures
+        fut.foreach { |x| @res = x }
+        @res.should == 1975
+      end
+
+      it 'should do nothing if the future has failed' do
+        fut = clazz.create { raise "NO" }
+        resume_futures
+        fut.foreach { |x| @res = x }
+        @res.should == 0
+      end
     end
 
   end

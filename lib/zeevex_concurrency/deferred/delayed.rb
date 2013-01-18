@@ -344,6 +344,13 @@ class ZeevexConcurrency::Delayed
     end
   end
 
+  module ForEach
+    def foreach
+      wait
+      yield value unless exception?
+    end
+  end
+
   class CancelledException < StandardError; end
 end
 
