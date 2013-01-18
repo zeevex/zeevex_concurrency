@@ -191,7 +191,7 @@ class ZeevexConcurrency::Delayed
     def onSuccess(&observer)
       @mutex.synchronize do
         if ready? && @success
-          observer.call(value(false))
+          observer.call(value(false)) rescue nil
         else
           add_callback(:success, observer)
         end
@@ -202,7 +202,7 @@ class ZeevexConcurrency::Delayed
     def onFailure(&observer)
       @mutex.synchronize do
         if ready? && !@success
-          observer.call(value(false))
+          observer.call(value(false)) rescue nil
         else
           add_callback(:failure, observer)
         end
@@ -213,7 +213,7 @@ class ZeevexConcurrency::Delayed
     def onComplete(&observer)
       @mutex.synchronize do
         if ready?
-          observer.call(value(false), @success)
+          observer.call(value(false), @success) rescue nil
         else
           add_callback(:completion, observer)
         end
@@ -232,7 +232,13 @@ class ZeevexConcurrency::Delayed
 
     def run_callback(callback, *args)
       return unless @_callbacks
-      (@_callbacks[callback] || []).each { |cb| cb.call(*args) }
+      (@_callbacks[callback] || []).each do |cb|
+        begin
+          cb.call(*args)
+        rescue
+          ZeevexConcurrency.logger.warn "Callback in #{self} threw exception: #{$!}"
+        end
+      end
     end
 
     def fulfill_with_callbacks(result, success = true)
