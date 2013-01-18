@@ -342,13 +342,7 @@ describe ZeevexConcurrency::Future do
       mock('observer')
     end
     subject do
-      clazz.create(Proc.new {@callable.call}).onSuccess do |val|
-        observer.succeed(val)
-      end.onFailure do |val|
-        observer.fail(val)
-      end.onComplete do |val, successFlag|
-        observer.complete(val, successFlag)
-      end
+      clazz.create(Proc.new {@callable.call})
     end
 
     before do
@@ -364,26 +358,28 @@ describe ZeevexConcurrency::Future do
     context 'registered before the future runs' do
       it 'should notify onSuccess observer' do
         @callable = Proc.new { 10 }
-        observer.should_receive(:complete).with(10, true)
+        subject.onSuccess { |val| observer.succeed(val) }
         observer.should_receive(:succeed).with(10)
         finish_test
       end
 
       it 'should notify onFailure observer after set_result raises exception' do
         @callable = Proc.new { raise "foo" }
-        observer.should_receive(:complete).with(kind_of(Exception), false)
+        subject.onFailure { |val| observer.fail(val) }
         observer.should_receive(:fail).with(kind_of(Exception))
         finish_test
       end
 
       it 'should notify onCompletion observer on success' do
         @callable = Proc.new { 10 }
+        subject.onComplete { |val, successFlag| observer.complete(val, successFlag) }
         observer.should_receive(:complete).with(10, true)
         finish_test
       end
 
       it 'should notify onCompletion observer after set_result raises exception' do
         @callable = Proc.new { raise "foo" }
+        subject.onComplete { |val, successFlag| observer.complete(val, successFlag) }
         observer.should_receive(:complete).with(kind_of(Exception), false)
         finish_test
       end
