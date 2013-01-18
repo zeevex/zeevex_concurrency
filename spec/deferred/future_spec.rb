@@ -564,7 +564,7 @@ describe ZeevexConcurrency::Future do
           expect { subject.value }.to raise_error(IOError)
         end
         it 'should return an exception thrown by error transformer' do
-          @failure_callable = lambda {|x| puts "raising nameerror"; raise NameError }
+          @failure_callable = lambda {|x| raise NameError }
           resume_futures
           expect { subject.value }.to raise_error(NameError)
         end

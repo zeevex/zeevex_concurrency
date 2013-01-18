@@ -236,7 +236,7 @@ class ZeevexConcurrency::Delayed
     end
 
     def fulfill_with_callbacks(result, success = true)
-      fulfill_without_notification(result, success)
+      fulfill_without_callbacks(result, success)
       run_callback(:completion, result, success)
       run_callback(success ? :success : :failure, result)
       # release callbacks to GC
