@@ -223,6 +223,8 @@ class ZeevexConcurrency::Delayed
 
     protected
 
+    # all these methods must be called holding @mutex
+
     def add_callback(callback, observer)
       @_callbacks ||= {}
       (@_callbacks[callback] ||= []).push observer
@@ -231,13 +233,14 @@ class ZeevexConcurrency::Delayed
     def run_callback(callback, *args)
       return unless @_callbacks
       (@_callbacks[callback] || []).each { |cb| cb.call(*args) }
-      @_callbacks[callback] = []
     end
 
     def fulfill_with_callbacks(result, success = true)
       fulfill_without_notification(result, success)
       run_callback(:completion, result, success)
       run_callback(success ? :success : :failure, result)
+      # release callbacks to GC
+      @_callbacks = {}
     end
 
   end
