@@ -338,6 +338,12 @@ class ZeevexConcurrency::Delayed
     end
   end
 
+  module Multiplexing
+    def either(other)
+      ZeevexConcurrency::Multiplex.either(self, other)
+    end
+  end
+
   class CancelledException < StandardError; end
 end
 

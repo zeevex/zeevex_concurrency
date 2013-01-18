@@ -213,7 +213,6 @@ describe ZeevexConcurrency::Multiplex do
     clazz = ZeevexConcurrency::Multiplex
 
     subject do
-
     end
     let :mux do
       clazz.new(@futures, 1, :filter => @filter)
@@ -246,6 +245,56 @@ describe ZeevexConcurrency::Multiplex do
       @futures.count.times { |i| queue << i }
       mux.value.first.value.should == 3
     end
+  end
+
+  context '.either' do
+    let :equeue do
+      Queue.new
+    end
+    let :future1 do
+      ZeevexConcurrency.future { equeue.pop }
+    end
+    let :future2 do
+      ZeevexConcurrency.future { equeue.pop }
+    end
+
+    let :either do
+      clazz.either(future1, future2)
+    end
+    subject do
+    end
+
+    it 'should be a future' do
+      either.should be_a(ZeevexConcurrency::Future)
+    end
+
+    it 'should not be ready at first' do
+      either.should_not be_ready
+    end
+
+    it 'should return the future that completes first' do
+      ZeevexConcurrency::Future.worker_pool = ZeevexConcurrency::ThreadPool::FixedPool.new(1)
+      equeue << "winrar"
+      equeue << "loser"
+      either.value.should == "winrar"
+    end
+  end
+
+  context '.first_of' do
+    let :firstof do
+      clazz.first_of(*@futures)
+    end
+    subject do
+    end
+
+    it 'should return the future that completes first' do
+      ZeevexConcurrency::Future.worker_pool = ZeevexConcurrency::ThreadPool::FixedPool.new(1)
+      queue << "winrar"
+      3.times { queue << "loser" }
+      @futures.each {|f| f.wait}
+      firstof.value.should == "winrar"
+    end
+
   end
 
 end

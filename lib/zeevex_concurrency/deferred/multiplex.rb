@@ -81,6 +81,7 @@ class ZeevexConcurrency::Multiplex
         # we're out of candidates but don't have a complete result
         if @waiting.empty? && @latch.count > 0
           @failed = true
+          do_complete
           @latch.count.times { @latch.countdown! }
         end
       else
@@ -118,7 +119,7 @@ class ZeevexConcurrency::Multiplex
   public
 
   def self.first_of(*futures)
-    Multiplex.new(futures, 1).value.first
+    ZeevexConcurrency.future { new(futures, 1).value.first.value }
   end
 
   def self.either(future1, future2)
