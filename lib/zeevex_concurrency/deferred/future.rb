@@ -11,9 +11,7 @@ class ZeevexConcurrency::Future < ZeevexConcurrency::Delayed
   include ZeevexConcurrency::Delayed::Observable
   include ZeevexConcurrency::Delayed::Callbacks
   include ZeevexConcurrency::Delayed::Dataflowable
-  include ZeevexConcurrency::Delayed::Map
 
-  # @@worker_pool = ZeevexConcurrency::EventLoop.new
   @@worker_pool = ZeevexConcurrency::ThreadPool::FixedPool.new
   @@worker_pool.start
 
@@ -53,5 +51,85 @@ class ZeevexConcurrency::Future < ZeevexConcurrency::Delayed
   class << self
     alias_method :future, :create
   end
+
+
+  module Map
+    def map(&block)
+      new_future = ZeevexConcurrency::Future.new {}
+      self.onComplete do |val, success|
+        new_future._map_completion(val, success, block)
+      end
+      new_future
+    end
+
+    protected
+
+    def _map_completion(value, success, block)
+      @binding = Proc.new do
+        if success
+          block.call value
+        else
+          raise value
+        end
+      end
+
+      ZeevexConcurrency::Future.worker_pool.enqueue self
+    end
+  end
+
+  module Fallback
+     def fallback_to(&block)
+      new_future = ZeevexConcurrency::Future.new {}
+      self.onComplete do |val, success|
+        new_future._fallback_completion(val, success, block)
+      end
+      new_future
+    end
+
+    protected
+
+    def _fallback_completion(value, success, block)
+      @binding = Proc.new do
+        if success
+          value
+        else
+          block.call
+        end
+      end
+      ZeevexConcurrency::Future.worker_pool.enqueue self
+    end
+  end
+
+  module Transform
+    def transform(result_proc, failure_proc)
+      unless result_proc && failure_proc
+        raise ArgumentError, 'Must suppluy both success and failure transformer'
+      end
+      new_future = ZeevexConcurrency::Future.new {}
+      self.onComplete do |val, success|
+        new_future._transform_completion(val, success, result_proc, failure_proc)
+      end
+      new_future
+    end
+
+    protected
+
+    def _transform_completion(value, success, result_proc, failure_proc)
+      @binding = Proc.new do
+        if success
+          result_proc.call value
+        else
+          res = failure_proc.call value
+          raise res if res.is_a?(Exception)
+          res
+        end
+      end
+      ZeevexConcurrency::Future.worker_pool.enqueue self
+    end
+  end
+
+  include Map
+  include Fallback
+  include Transform
 end
 

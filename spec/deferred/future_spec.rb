@@ -524,7 +524,7 @@ describe ZeevexConcurrency::Future do
           subject.value.should == 65
           base.value(false).should be_a(Exception)
         end
-        it 'should return fallbackTo block on base failure' do
+        it 'should return exception of fallbackTo block on cascading failure' do
           @fallback_callable = lambda { raise ArgumentError, "inner" }
           resume_futures
           expect { subject.value }.to raise_error
@@ -533,6 +533,50 @@ describe ZeevexConcurrency::Future do
       end
 
     end
+
+    context '#transform' do
+      subject do
+        base.transform @result_callable, @failure_callable
+      end
+
+      it { should be_a(ZeevexConcurrency::Future) }
+
+      before do
+        @result_callable  = lambda {|x| x + 50 }
+        @failure_callable = lambda {|x| IOError.new "test" }
+      end
+
+      context 'when original future succeeds' do
+        it 'should return value of original future on success' do
+          @callable        = lambda { 77 }
+          @result_callable = lambda {|x| x + 50 }
+          resume_futures
+          subject.value.should == 127
+        end
+      end
+
+      context 'when original future fails' do
+        before do
+          @callable = lambda { raise "foo" }
+        end
+        it 'should return transformed IOError' do
+          resume_futures
+          expect { subject.value }.to raise_error(IOError)
+        end
+        it 'should return an exception thrown by error transformer' do
+          @failure_callable = lambda {|x| puts "raising nameerror"; raise NameError }
+          resume_futures
+          expect { subject.value }.to raise_error(NameError)
+        end
+        it 'should return value if error transformer returns a non-exception' do
+          @failure_callable = lambda {|x| 9000 }
+          resume_futures
+          subject.value.should == 9000
+        end
+      end
+
+    end
+
   end
 end
 
