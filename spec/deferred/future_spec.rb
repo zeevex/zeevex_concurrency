@@ -577,6 +577,43 @@ describe ZeevexConcurrency::Future do
 
     end
 
+    context '#filter' do
+      subject do
+        base.filter &@filter_proc
+      end
+
+      it { should be_a(ZeevexConcurrency::Future) }
+
+      before do
+        @filter_proc = lambda { |x| true }
+      end
+
+      context 'when original future succeeds' do
+        it 'should return result of original future when it matches filter' do
+          @filter_proc = lambda {|x| x % 2 == 0 }
+          @callable    = lambda { 100 }
+          resume_futures
+          subject.value.should == 100
+        end
+        it 'should signal failure when result does not match filter' do
+          @filter_proc = lambda {|x| x % 2 == 1 }
+          @callable    = lambda { 100 }
+          resume_futures
+          expect { subject.value}.to raise_error(IndexError)
+        end
+      end
+
+      context 'when original future fails' do
+        before do
+          @callable = lambda { raise IOError, "foo" }
+        end
+        it 'should return the exception from the original future' do
+          resume_futures
+          expect { subject.value }.to raise_error(IOError)
+        end
+      end
+    end
+
   end
 end
 

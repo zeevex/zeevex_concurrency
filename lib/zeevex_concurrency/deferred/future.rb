@@ -128,8 +128,35 @@ class ZeevexConcurrency::Future < ZeevexConcurrency::Delayed
     end
   end
 
+  module Filter
+    def filter(&filter_proc)
+      unless filter_proc
+        raise ArgumentError, 'Must supply filter proc'
+      end
+      new_future = ZeevexConcurrency::Future.new {}
+      self.onComplete do |val, success|
+        new_future._filter_completion(val, success, filter_proc)
+      end
+      new_future
+    end
+
+    protected
+
+    def _filter_completion(value, success, filter_proc)
+      @binding = Proc.new do
+        if success
+          filter_proc.call(value) ? value : raise(IndexError, 'Future filter did not pass value')
+        else
+          raise value
+        end
+      end
+      ZeevexConcurrency::Future.worker_pool.enqueue self
+    end
+  end
+
   include Map
   include Fallback
   include Transform
+  include Filter
 end
 
