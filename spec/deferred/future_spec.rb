@@ -674,13 +674,18 @@ describe ZeevexConcurrency::Future do
           base.and_then do |result, success|
             raise IndexError, "first andthen"
           end.and_then do |result, success|
-            observer.record(result, success)
+            observer.record(result, success, 987) if @record
             @accumulator = 7500
           end
         end
 
+        it 'should still return value of original future' do
+          resume_futures
+          subject.value.should == 1000
+        end
         it 'should execute second block even if first fails' do
-          observer.should_receive(:record).with(kind_of(Exception), false)
+          @record = true
+          observer.should_receive(:record).with(1000, true, 987)
           resume_futures
           subject.wait
           @accumulator.should == 7500

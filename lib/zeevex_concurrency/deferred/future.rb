@@ -85,8 +85,8 @@ class ZeevexConcurrency::Future < ZeevexConcurrency::Delayed
 
   module AndThen
     def and_then(&block)
-      transform lambda { |result| block.call(result, true); result },
-                lambda { |error|  block.call(error, false); error }
+      transform lambda { |result| block.call(result, true) rescue nil; result },
+                lambda { |error|  block.call(error, false) rescue nil; error }
     end
   end
 
