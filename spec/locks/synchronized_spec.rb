@@ -14,7 +14,6 @@ describe ZeevexConcurrency::Synchronized do
   def is_a_synchronized_object(obj)
     obj.should_not be_nil
     obj.respond_to?(:__getobj__).should be_true
-    obj.instance_exec { @mutex }.should be_a(::Mutex)
   end
 
   context 'creation' do

@@ -457,6 +457,8 @@ describe ZeevexConcurrency::Future do
         ons = mock('onsuccess')
         ons.should_receive(:done).with(20)
         subject.onSuccess {|val| ons.done(val) }
+        resume_futures
+        subject.wait
         finish_test
       end
 
