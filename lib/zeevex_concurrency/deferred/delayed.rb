@@ -242,6 +242,30 @@ class ZeevexConcurrency::Delayed
 
   end
 
+  module Map
+    def map(&block)
+      new_future = ZeevexConcurrency::Future.new {}
+      self.onComplete do |val, success|
+        new_future._map_completion(val, success, block)
+      end
+      new_future
+    end
+
+    protected
+
+    def _map_completion(value, success, block)
+      @binding = Proc.new do
+        if success
+          block.call value
+        else
+          raise value
+        end
+      end
+
+      ZeevexConcurrency::Future.worker_pool.enqueue self
+    end
+  end
+
   module LatchBased
     def wait(timeout = nil)
       @_latch.wait(timeout)

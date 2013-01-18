@@ -11,6 +11,7 @@ class ZeevexConcurrency::Future < ZeevexConcurrency::Delayed
   include ZeevexConcurrency::Delayed::Observable
   include ZeevexConcurrency::Delayed::Callbacks
   include ZeevexConcurrency::Delayed::Dataflowable
+  include ZeevexConcurrency::Delayed::Map
 
   # @@worker_pool = ZeevexConcurrency::EventLoop.new
   @@worker_pool = ZeevexConcurrency::ThreadPool::FixedPool.new

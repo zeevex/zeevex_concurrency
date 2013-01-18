@@ -412,5 +412,78 @@ describe ZeevexConcurrency::Future do
     #  end
     #end
   end
+
+  context '#map' do
+    let :observer do
+      mock('observer')
+    end
+    let :base do
+      clazz.create(Proc.new {@callable.call})
+    end
+    subject do
+      base.map do |val|
+        @map_callable.call(val)
+      end
+    end
+
+    before do
+      pause_futures
+      @callable = lambda { 10 }
+      @map_callable = lambda {|x| x * 2 }
+    end
+
+    def finish_test
+      subject
+      resume_futures
+      wait_for_queue_to_empty
+    end
+
+    it 'should be a future' do
+      subject.should be_a(clazz)
+    end
+
+    it 'should be a new future' do
+      subject.__id__.should_not == base.__id__
+    end
+
+    it 'should not be ready until base future is ready' do
+      subject.should_not be_ready
+    end
+
+    it 'should return the proper value' do
+      resume_futures
+      subject.value.should == 20
+    end
+
+    it 'should call onsuccess' do
+      ons = mock('onsuccess')
+      ons.should_receive(:done).with(20)
+      subject.onSuccess {|val| ons.done(val) }
+      finish_test
+    end
+
+    context 'failure' do
+      before do
+        @callable     = lambda { raise "foo" }
+        @map_callable = lambda { observer.skip }
+      end
+      
+      it 'should fail without executing block if base future fails' do
+        observer.should_not_receive(:skip)
+        finish_test
+      end
+
+      it 'should return an exception' do
+        resume_futures
+        base.value(false).should be_a(Exception)
+      end
+
+      it 'should return the same exception that was raised in base' do
+        resume_futures
+        base.value(false).should == subject.value(false)
+      end
+
+    end
+  end
 end
 
