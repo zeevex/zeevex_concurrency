@@ -37,7 +37,7 @@ class ZeevexConcurrency::Future < ZeevexConcurrency::Delayed
 
   def self.create(callable=nil, options = {}, &block)
     nfuture = ZeevexConcurrency::Future.new(callable, options, &block)
-    (options.delete(:event_loop) || worker_pool).enqueue nfuture
+    (options.delete(:event_loop) || options.delete(:executor) || worker_pool).enqueue nfuture
 
     nfuture
   end
