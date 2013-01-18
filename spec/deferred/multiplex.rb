@@ -209,5 +209,44 @@ describe ZeevexConcurrency::Multiplex do
     end
   end
 
+  context 'filtering' do
+    clazz = ZeevexConcurrency::Multiplex
+
+    subject do
+
+    end
+    let :mux do
+      clazz.new(@futures, 1, :filter => @filter)
+    end
+
+    it 'should not be ready if no futures have yet passed the filter' do
+      @filter = lambda {|x| false}
+      2.times { queue << 1 }
+      @futures[0].wait
+      @futures[1].wait
+      mux.ready?.should be_false
+    end
+
+    it 'should signal error if not enough futures passed the filter' do
+      @filter = lambda {|x| false}
+      @futures.count.times { queue << 1 }
+      @futures.last.wait
+      expect { mux.value }.to raise_error
+    end
+
+    it 'should return an empty list to value(false) if no futures passed the filter' do
+      @filter = lambda {|x| false}
+      @futures.count.times { queue << 1 }
+      @futures.last.wait
+      mux.value(false).should == []
+    end
+
+    it 'should return the first future to pass the filter' do
+      @filter = lambda {|x| x.value == 3 }
+      @futures.count.times { |i| queue << i }
+      mux.value.first.value.should == 3
+    end
+  end
+
 end
 

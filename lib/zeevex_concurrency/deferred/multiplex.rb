@@ -10,11 +10,14 @@ class ZeevexConcurrency::Multiplex
   def initialize(dependencies, count = nil, options = {})
     raise ArgumentError, "Must provide a list of dependencies" unless dependencies && !dependencies.empty?
 
+    @count        = count
     @mutex        = Mutex.new
     @dependencies = dependencies.clone.freeze
     @waiting      = dependencies.clone
     @complete     = []
-    @result       = nil
+    @result       = []
+    @filter       = options.delete(:filter)
+    @failed       = false
 
     @latch        = CountDownLatch.new(count || @dependencies.length)
 
@@ -35,9 +38,13 @@ class ZeevexConcurrency::Multiplex
     @latch.wait(timeout)
   end
 
-  def value(timeout = nil)
-    wait(timeout)
-    @result.dup
+  def value(raise_if_failed = true)
+    wait
+    if @failed && raise_if_failed
+      raise IndexError, "Could not collect #{@count} result futures"
+    else
+      @result.dup
+    end
   end
 
   def dependencies
@@ -46,6 +53,10 @@ class ZeevexConcurrency::Multiplex
 
   def complete
     @complete.clone
+  end
+
+  def results
+    @result.clone
   end
 
   def waiting
@@ -57,10 +68,21 @@ class ZeevexConcurrency::Multiplex
     @mutex.synchronize do
       if @waiting.delete(source)
         @complete << source
-        do_complete if @latch.count == 1
 
-        # release waiters
-        @latch.countdown!
+        # does this one qualify?
+        if !@done && (!@filter || @filter.call(source))
+          @result << source
+          do_complete if @latch.count == 1
+
+          # release waiters
+          @latch.countdown!
+        end
+
+        # we're out of candidates but don't have a complete result
+        if @waiting.empty? && @latch.count > 0
+          @failed = true
+          @latch.count.times { @latch.countdown! }
+        end
       else
         STDERR.puts "Received update from non-waiting source: #{source.inspect}"
       end
@@ -82,7 +104,8 @@ class ZeevexConcurrency::Multiplex
   protected
 
   def do_complete
-    @result = @complete.dup.freeze
+    @done = true
+    @result.freeze
     do_notify_observers
   end
 
@@ -90,6 +113,16 @@ class ZeevexConcurrency::Multiplex
     changed
     notify_observers self, @complete.clone
     delete_observers
+  end
+
+  public
+
+  def self.first_of(*futures)
+    Multiplex.new(futures, 1).value.first
+  end
+
+  def self.either(future1, future2)
+    first_of(future1, future2)
   end
 
 end
