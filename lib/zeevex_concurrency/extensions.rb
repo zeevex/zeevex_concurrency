@@ -32,22 +32,21 @@ module ZeevexConcurrency
   # thusly:
   #
   # positive integer:   use a new pool with up to that many threads (no more than bounded_size if supplied)
-  # no / nil argument:  use a new pool with default number of threads (2 * cpu_count)
+  # nil:                use a new pool with default number of threads (2 * cpu_count)
   # -1:                 use the default Future thread pool, or defpool if supplied
   # 0 or INT_MAX:       use exactly as many threads as bounded_size (fully concurrent)
   # pool or event_loop: use the provided executor
   #
   def self.thread_pool_from_spec(spec, defpool = nil, bounded_size = nil)
-    defpool ||= ZeevexConcurrency::Future.worker_pool
     case spec
     when 0
       ZeevexConcurrency::ThreadPool::FixedPool.new(bounded_size)
-    when ZeevexConcurrency::ThreadPool, ZeevexConcurrency::EventLoop
+    when ZeevexConcurrency::ThreadPool::Abstract, ZeevexConcurrency::EventLoop
       spec
     when nil
       ZeevexConcurrency::ThreadPool::FixedPool.new
     when -1
-      ZeevexConcurrency::Future.worker_pool
+      defpool || ZeevexConcurrency::Future.worker_pool
     when Integer
       ZeevexConcurrency::ThreadPool::FixedPool.new(bounded_size ? [spec, bounded_size].min : spec)
     else

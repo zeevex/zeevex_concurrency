@@ -5,6 +5,10 @@ require 'thread'
 require 'atomic'
 
 module ZeevexConcurrency::ThreadPool
+  class Abstract
+
+  end
+
   module Stubs
     def busy?
       free_count == 0
@@ -60,7 +64,7 @@ module ZeevexConcurrency::ThreadPool
   #
   # Use a single-threaded event loop to process jobs
   #
-  class EventLoopAdapter
+  class EventLoopAdapter < Abstract
     include Stubs
 
     def initialize(loop = nil, options = {})
@@ -94,7 +98,7 @@ module ZeevexConcurrency::ThreadPool
   # Run job semi-synchronously (on a separate thread, but block on it)
   # We use a separate thread
   #
-  class InlineThreadPool
+  class InlineThreadPool < Abstract
     include Stubs
 
     def initialize(loop = nil)
@@ -126,7 +130,7 @@ module ZeevexConcurrency::ThreadPool
   #
   # Launch a concurrent thread for every new task enqueued
   #
-  class ThreadPerJobPool
+  class ThreadPerJobPool < Abstract
     include Stubs
 
     def initialize
@@ -186,7 +190,7 @@ module ZeevexConcurrency::ThreadPool
   #
   # Use a fixed pool of N threads to process jobs
   #
-  class FixedPool
+  class FixedPool < Abstract
     include Stubs
 
     def initialize(count = -1, options = {})
