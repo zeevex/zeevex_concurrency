@@ -50,14 +50,6 @@ describe ZeevexConcurrency::Synchronized do
         expect { ZeevexConcurrency.greedy_pmap([1,2,3]) }.to raise_error(ArgumentError)
       end
     end
-
-    context 'concurrency argument parsing' do
-      it 'should treat no argument as 2*CPU'
-      it 'should treat nil argument as 2*CPU'
-      it 'should treat -1 argument as using the default pool'
-      it 'should treat 0 as fully concurrent processing of all elements'
-      it 'should accept and use a thread pool'
-    end
   end
 
   shared_examples_for 'collection with pmap' do
@@ -70,15 +62,24 @@ describe ZeevexConcurrency::Synchronized do
   context 'Array#pmap' do
     subject { [1,2,3] }
     it_should_behave_like 'collection with pmap'
+    it 'should process collection properly' do
+      subject.pmap {|x| x*2}.should == [2,4,6]
+    end
   end
 
   context 'Hash#pmap' do
     subject { {:a => 1, :b => 33} }
     it_should_behave_like 'collection with pmap'
+    it 'should process collection properly' do
+      Hash[subject.pmap {|(k,v)| [k.to_s, v+100]}].should == {"a" => 101, "b" => 133}
+    end
   end
 
-  # context 'Enumerable#pmap' do
-  #   subject { Enumerable }
-  #   it_should_behave_like 'collection class with pmap'
-  # end
+  context 'Set#pmap' do
+    subject { [99, 230, 500] }
+    it_should_behave_like 'collection with pmap'
+    it 'should process collection properly' do
+      subject.pmap {|v| 1000+v}.to_set.should == Set.new([1500, 1230, 1099])
+    end
+  end
 end
