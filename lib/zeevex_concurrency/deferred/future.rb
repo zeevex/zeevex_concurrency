@@ -83,6 +83,13 @@ class ZeevexConcurrency::Future < ZeevexConcurrency::Delayed
     end
   end
 
+  module AndThen
+    def and_then(&block)
+      transform lambda { |result| block.call(result, true); result },
+                lambda { |error|  block.call(error, false); error }
+    end
+  end
+
   module Fallback
      def fallback_to(&block)
       new_future = ZeevexConcurrency::Future.new {}
@@ -165,5 +172,6 @@ class ZeevexConcurrency::Future < ZeevexConcurrency::Delayed
   include Fallback
   include Transform
   include Filter
+  include AndThen
 end
 

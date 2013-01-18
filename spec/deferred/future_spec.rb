@@ -610,7 +610,85 @@ describe ZeevexConcurrency::Future do
       end
     end
 
-    context '#flatMap' do
+    context '#and_then' do
+      subject do
+        base.and_then do |result, success|
+          observer.record(result, success, 1) if @record
+          @accumulator += (success ? result * 2 : 12)
+        end.and_then do |result, success|
+          observer.record(result, success, 2) if @record
+          @accumulator *= 2
+        end
+      end
+      before do
+        @accumulator = 0
+        @callable    = lambda { 1000 }
+      end
+      it 'should be a future' do
+        subject.should be_a(clazz)
+      end
+      it 'should not be ready until base future is ready' do
+        subject.should_not be_ready
+      end
+      it 'should return the value returned from the original future' do
+        resume_futures
+        subject.value.should == 1000
+      end
+      it 'should have executed all the chained futures for side effects' do
+        resume_futures
+        subject.wait
+        @accumulator.should == 4000
+      end
+      it 'should have run and_then blocks in order' do
+        @record = true
+        observer.should_receive(:record).with(1000, true, 1)
+        observer.should_receive(:record).with(1000, true, 2)
+        resume_futures
+        subject.wait
+      end
+
+      context 'failure in base future' do
+        before do
+          @callable     = lambda { raise ArgumentError, "foo" }
+        end
+        it 'should return original value of original future' do
+          resume_futures
+          subject.value(false).should be_a(ArgumentError)
+        end
+        it 'should return the same exception that was raised in base' do
+          resume_futures
+          base.value(false).should == subject.value(false)
+        end
+        it 'should have run and_then blocks in order' do
+          @record = true
+          observer.should_receive(:record).with(kind_of(Exception), false, 1)
+          observer.should_receive(:record).with(kind_of(Exception), false, 2)
+          resume_futures
+          subject.wait
+          @accumulator.should == 24
+        end
+      end
+
+      context 'failure in and_then block' do
+        subject do
+          base.and_then do |result, success|
+            raise IndexError, "first andthen"
+          end.and_then do |result, success|
+            observer.record(result, success)
+            @accumulator = 7500
+          end
+        end
+
+        it 'should execute second block even if first fails' do
+          observer.should_receive(:record).with(kind_of(Exception), false)
+          resume_futures
+          subject.wait
+          @accumulator.should == 7500
+        end
+      end
+    end
+
+    context '#flat_map' do
       # we'll have one future waiting on another, so we need some actual concurrency
       # in these tests
       let :loop do
