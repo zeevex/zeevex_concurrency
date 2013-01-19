@@ -1,12 +1,21 @@
 require 'zeevex_concurrency'
 require 'zeevex_concurrency/executors/event_loop'
+require 'zeevex_concurrency/util/refcount'
 require 'countdownlatch'
 require 'thread'
 require 'atomic'
 
 module ZeevexConcurrency::ThreadPool
   class Abstract
+    include ZeevexConcurrency::Refcount
 
+    def initialize(*args)
+      _initialize_refcount
+    end
+
+    def destroy
+      stop
+    end
   end
 
   module Stubs
@@ -68,6 +77,7 @@ module ZeevexConcurrency::ThreadPool
     include Stubs
 
     def initialize(loop = nil, options = {})
+      super
       @loop ||= ZeevexConcurrency::EventLoop.new(:queue => options.delete(:queue))
       start
     end
@@ -102,6 +112,7 @@ module ZeevexConcurrency::ThreadPool
     include Stubs
 
     def initialize(loop = nil)
+      super
       start
     end
 
@@ -134,6 +145,7 @@ module ZeevexConcurrency::ThreadPool
     include Stubs
 
     def initialize
+      super
       @mutex      = Mutex.new
       @group      = ThreadGroup.new
       @busy_count = Atomic.new(0)
@@ -194,6 +206,7 @@ module ZeevexConcurrency::ThreadPool
     include Stubs
 
     def initialize(count = -1, options = {})
+      super
       if count.nil? || count == -1
         count = ZeevexConcurrency::ThreadPool.cpu_count * 2
       end

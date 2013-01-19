@@ -14,8 +14,7 @@ class ZeevexConcurrency::Future < ZeevexConcurrency::Delayed
   include ZeevexConcurrency::Delayed::Multiplexing
   include ZeevexConcurrency::Delayed::ForEach
 
-  @@worker_pool = ZeevexConcurrency::ThreadPool::FixedPool.new
-  @@worker_pool.start
+  @@worker_pool = nil
 
   def initialize(computation = nil, options = {}, &block)
     raise ArgumentError, "Must provide computation or block for a future" unless (computation || block)
@@ -43,11 +42,55 @@ class ZeevexConcurrency::Future < ZeevexConcurrency::Delayed
   end
 
   def self.worker_pool
-    @@worker_pool
+    Thread.current[:_future_worker_pool] || @@worker_pool
   end
 
+  #
+  # Sets the global process-wide default worker pool
+  #
+  def self.global_worker_pool=(pool)
+    old_pool = @@worker_pool
+    @@worker_pool = pool_retain(pool)
+    pool_release(old_pool)
+  end
+
+  #
+  # Sets the default worker pool for Futures created from this thread
+  #
   def self.worker_pool=(pool)
-    @@worker_pool = pool
+    old_pool = Thread.current[:_future_worker_pool]
+    Thread.current[:_future_worker_pool] = pool_retain(pool)
+    pool_release(old_pool)
+  end
+
+  def self.pool_retain(pool)
+    if pool && pool.respond_to?(:retain)
+      pool.retain
+    end
+  end
+
+  def self.pool_release(pool)
+    if pool && pool.respond_to?(:release)
+      pool.release
+    end
+    pool
+  end
+
+  class << self
+    protected :pool_retain, :pool_release
+  end
+
+  #
+  # Execute block with the Future worker pool set to `pool`
+  #
+  def self.with_worker_pool(pool)
+    old_pool = Thread.current[:_future_worker_pool]
+    Thread.current[:_future_worker_pool] = pool_retain(pool)
+    raise ArgumentError, "Must provide pool" unless pool && pool.respond_to?(:enqueue)
+    yield
+  ensure
+    Thread.current[:_future_worker_pool] = old_pool
+    pool_release(pool)
   end
 
   class << self
@@ -175,5 +218,6 @@ class ZeevexConcurrency::Future < ZeevexConcurrency::Delayed
   include Transform
   include Filter
   include AndThen
-end
 
+  self.global_worker_pool = ZeevexConcurrency::ThreadPool::FixedPool.new
+end
