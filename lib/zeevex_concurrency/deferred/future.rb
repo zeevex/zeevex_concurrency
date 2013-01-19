@@ -49,6 +49,7 @@ class ZeevexConcurrency::Future < ZeevexConcurrency::Delayed
   # Sets the global process-wide default worker pool
   #
   def self.global_worker_pool=(pool)
+    check_pool pool
     old_pool = @@worker_pool
     @@worker_pool = pool_retain(pool)
     pool_release(old_pool)
@@ -58,6 +59,7 @@ class ZeevexConcurrency::Future < ZeevexConcurrency::Delayed
   # Sets the default worker pool for Futures created from this thread
   #
   def self.worker_pool=(pool)
+    check_pool pool
     old_pool = Thread.current[:_future_worker_pool]
     Thread.current[:_future_worker_pool] = pool_retain(pool)
     pool_release(old_pool)
@@ -67,6 +69,7 @@ class ZeevexConcurrency::Future < ZeevexConcurrency::Delayed
     if pool && pool.respond_to?(:retain)
       pool.retain
     end
+    pool
   end
 
   def self.pool_release(pool)
@@ -76,8 +79,12 @@ class ZeevexConcurrency::Future < ZeevexConcurrency::Delayed
     pool
   end
 
+  def self.check_pool(pool)
+    raise ArgumentError, "Pool must respond to :enqueue" unless pool.respond_to?(:enqueue)
+  end
+
   class << self
-    protected :pool_retain, :pool_release
+    protected :pool_retain, :pool_release, :check_pool
   end
 
   #
