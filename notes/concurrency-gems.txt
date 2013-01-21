@@ -1,0 +1,152 @@
+
+
+Combo libs:
+
+  Mentalguy's omnibus lib:
+    actors, channels, locks, queues
+    http://rubydoc.info/gems/concurrent/frames
+      https://github.com/mental/concurrent
+      article: http://moonbase.rydia.net/mental/blog/programming/the-future-of-the-omnibus
+
+  https://github.com/pmahoney/process_shared - cross-process
+     concurrency primitives using SYSV IPC (mutex, semaphore, shmem)
+
+  https://github.com/meh/ruby-thread - thread pool, channel, and
+     recursive mutex
+
+
+Thread-safe data structures:
+
+  https://github.com/kaspernj/tsafe.git - threadsafe data structures
+
+  https://github.com/harukizaemon/hamster
+
+
+pmap, parallel map:
+
+  https://github.com/bruceadams/pmap
+
+  https://github.com/junegunn/parallelize - pmap and peach
+
+  https://github.com/jatkins/peach
+
+CSP and Go-Like:
+
+  https://github.com/igrigorik/agent - go-like agents
+
+  https://github.com/efqdalton/ruby_channel - go-like channels
+
+  https://github.com/dasch/minx - CSP
+
+  https://github.com/dasch/ruby-csp - another CSP
+
+
+Futures etc.:
+
+  https://github.com/mental/lazy - lazy eval (delay), promise, and
+        futures - transparent proxying
+
+  https://github.com/sriedel/future_agent - futures using subprocesses
+
+  See also omnibus concurrency.
+
+Locks:
+
+  https://github.com/benlangfeld/synchronicity - couple of different latches
+
+  https://github.com/roark/ae_concurrencylocks - lock implementations
+       for educational use
+
+  https://github.com/NOX73/semaphore
+
+Queue data structures:
+
+  http://rubydoc.info/github/kanwei/algorithms/master/Containers/RubyDeque
+     from https://github.com/kanwei/algorithms
+
+  https://github.com/flexfrank/deque - fast deque (3yo) - Cext
+
+  http://libtomato.rubyforge.org/rdoc/classes/Libtomato/Deque.html - Cext
+
+  https://github.com/akr/depq - double-ended priority queue
+
+  https://github.com/harukizaemon/hamster - clojure-persistent queue
+
+  https://github.com/bebac/thread-priority-queue
+
+Thread Pools and Work Queues:
+
+  https://github.com/tralamazza/thread_tools - misc, includes a
+       semaphore and a thread pool
+
+  https://github.com/mperham/girl_friday - work queue
+
+  https://github.com/puma/puma/blob/master/lib/puma/thread_pool.rb - thread pool
+
+  https://github.com/eguitarz/threadpool
+
+  https://github.com/fmmfonseca/work_queue - looks nice
+
+  See also omnibus concurrency.
+
+
+Multi-process parallel execution:
+
+  http://abundance.rubyforge.org/
+
+  https://github.com/grosser/parallel - run tasks in parallel threads or processes
+
+
+Thread-Local Data:
+
+  https://github.com/mental/thread_local - fiber and thread local vars
+
+  http://johnandrewmarshall.com/projects/thread_variable
+
+  https://github.com/schoefmax/tlattr_accessors - tlattr_accessor for objects
+
+  meh:
+    http://rubydoc.info/gems/thread_variables/frames
+      https://github.com/skaes/thread_variables
+
+
+Dynamic Binding / Vars:
+
+  http://cirw.in/blog/lspace - looks nice
+
+  https://github.com/wtaysom/Ruby-DynamicVariable
+
+  https://github.com/niklasb/ruby-dynamic-binding
+
+  See http://clojure.org/vars
+  See http://dev.clojure.org/display/design/Improve+Binding
+
+  [See thread-local data above]
+  See
+  http://stackoverflow.com/questions/10058996/about-changing-binding-of-a-proc-in-ruby
+
+Weak References etc.:
+
+  https://github.com/bdurand/ref - strong, weak, soft references
+      x-platform, also weak maps and reference queues, much higher
+      perf than native (allegedly)
+
+  https://github.com/headius/weakling - headius weak refs plus refqueue
+
+Other paradigms:
+
+  https://github.com/larrytheliquid/dataflow - dataflow variables, as in Oz
+
+
+Misc:
+
+  http://puma.io/ - concurrent web server
+
+  http://r3t.rubyforge.org/ - find race conditions
+
+
+
+
+References:
+    Mentalguy interview:
+       http://www.infoq.com/articles/actors-rubinius-interview
