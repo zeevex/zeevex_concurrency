@@ -14,6 +14,11 @@ describe ZeevexConcurrency::Var do
     Queue.new
   end
 
+  before do
+    queue
+    subject
+  end
+
   context '#new' do
     it 'should accept a nil binding' do
       Var.new
@@ -86,7 +91,6 @@ describe ZeevexConcurrency::Var do
       Var.new { @counter += 1; Thread.current.__id__ }
     end
     before do
-      subject
       @counter = 0
     end
     it 'should be bound' do
@@ -160,17 +164,23 @@ describe ZeevexConcurrency::Var do
         subject.should == "scopeval"
       end
     end
+
+    # failing - expected t1, got rootval on jruby
     it 'should not affect other threads' do
+      queue
+      subject
+
       t1 = Thread.new do
         Var.set(subject, "t1")
         queue.pop
         Var.get(subject)
       end
       Var.with_bindings([[subject, "scopeval"]]) do
-        queue << "continue"
+        queue << "again"
         t1.value.should == "t1"
       end
     end
+
     it 'should unwind after block terminates' do
       Var.with_bindings([[subject, "scopeval"]]) do
       end
@@ -194,6 +204,48 @@ describe ZeevexConcurrency::Var do
     end
   end
 
+  context 'should clean up thread-root values for vars that have been garbage collected' do
+    subject do
+      Var.new('ack')
+    end
+    it 'should register Var to be monitored when thread-root value is set' do
+      Var.should_receive(:register_thread_root).with(subject, kind_of(Thread))
+      Thread.new { Var.set(subject, 'bar') }.join
+    end
+
+    it 'should start monitor thread when first Var sets thread-root value' do
+      pending 'need right syntax to reference class var'
+      Thread.new { Var.set(subject, 'bar') }.join
+      Var.class_eval do
+        @@reaper_thread
+      end.should be_a(Thread)
+    end
+
+    it 'should remove thread-root value when var goes out of scope' do
+      v = Var.new('temp')
+      q2 = Queue.new
+      t1 = Thread.new(v) do |k|
+        Var.set(k, 'baz')
+        kid = k.__id__
+        k = nil
+        q2 << 'goahead main thread'
+        # wait for main thread to force GC
+        queue.pop
+        Var.bindings[0][kid]
+      end
+
+      # wait for q2-thread to be ready
+      q2.pop
+      v = nil
+
+      # voodoo
+      5.times { GC.start; sleep 0.1 }
+
+      queue << 'goahead thread1'
+
+      t1.value.should be_nil
+    end
+  end
 
 end
 

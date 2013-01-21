@@ -1,15 +1,43 @@
 require 'thread'
+require 'ref'
+require 'zeevex_concurrency/util/proxy.rb'
 
 module ZeevexConcurrency
-  class Var < ZeevexProxy::Base
+  class Var < ZeevexConcurrency::Proxy
+    @@reaper_thread = nil
+    @@refqueue = ::Ref::ReferenceQueue.new
+
+    @@reaper_thread = ::Thread.new do
+      while true
+        ref = @@refqueue.pop
+        # if ref
+        #   puts "popped ref #{ref}, varid = #{ref.instance_variable_get("@zx_var_id")}"
+        # end
+        sleep 1
+      end
+    end
+
     def self.get(var, *defval)
       var.__getobj__
     rescue ::ZeevexConcurrency::UnboundError
       defval.length > 0 ? defval[0] : raise
     end
 
+    def self.register_thread_root(var, thread)
+      ref = ::Ref::WeakReference.new(var)
+      # puts "pushing ref to #{var.__id__}"
+      ref.instance_variable_set("@zx_var_id", var.__id__)
+      @@refqueue.monitor(ref)
+    rescue
+      puts "WARNING: Got exception in r_t_r: #{$!.inspect} #{$!.backtrace.join("\n  ")}"
+    end
+
     def self.set(var, value)
-      b = find_binding(var.__id__) || root_binding
+      b = find_binding(var.__id__)
+      unless b
+        b = root_binding
+        register_thread_root(var, ::Thread.current)
+      end
       b[var.__id__] = value
     end
 
@@ -35,7 +63,8 @@ module ZeevexConcurrency
 
     protected
 
-
+    # fetch current binding array; autocreate with a single root (non-block-scope-based) binding
+    # .set on vars without a block scope binding will use the root binding
     def self.bindings
       ::Thread.current['__zx_var_bindings'] ||= [Binding.new({})]
     end
@@ -74,6 +103,8 @@ module ZeevexConcurrency
         __bind_with_block(block)
       end
     end
+
+    @@_local_instance_vars = ["@__weak_backreferences__"]
 
     def __bind_with_value(value)
       @root_value = value
