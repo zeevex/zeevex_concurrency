@@ -16,6 +16,9 @@ module ZeevexConcurrency
   def self.logger=(logger)
     @logger = ZeevexConcurrency::Synchronized(logger)
   end
+
+  class ConcurrencyError < StandardError; end
+  class UnboundError < ConcurrencyError; end
 end
 
 require 'thread'
