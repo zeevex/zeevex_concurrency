@@ -2,12 +2,74 @@ require 'thread'
 require 'zeevex_concurrency/util/proxy.rb'
 
 module ZeevexConcurrency
+  #
+  # This is an attempt to provide a facility similar to Clojure's Vars, though without
+  # quite the same "interning" / intertwining with namespaces.
+  #
+  # A `Var` is a container which contains a reference to a Ruby object.
+  # It can be used as a mostly transparent proxy to that object, and the original
+  # object can be fetched via Var.get.
+  #
+  # The main feature of Var is its concurrency semantics.
+  #
+  # - Each Var may be created with a process-wide default value.
+  # - Alternately, it may be created "unbound" with no default value. Unbound vars cannot
+  #   be dereferenced and will raise an UnboundError exception if you try.
+  # - Finally, a Var may be created with a block, which will be evaluated as needed
+  #   to create a per-thread default value.
+  #
+  # A Var, whether bound or not, can have its global "root value" changed at runtime,
+  # though this is discouraged. Such changes affect all threads, though the root value
+  # may be shadowed by local bindings.
+  #
+  # Vars provide a Thread-local data facility through the use of Var.set, e.g.
+  #
+  #    $somevar = Var.new('foo')
+  #    Thread.new { Var.set($somevar, 'threadval'); sleep 5; puts Var.get($somevar) }
+  #    puts Var.get($somevar)
+  #
+  #  Should produce the output:
+  #
+  #     foo
+  #     threadval
+  #
+  # Vars also provide a dynamic binding facility through the use of Var.with_bindings. Such
+  # bindings are similar to dynamic binding in any lisp, though they are visible only to the
+  # thread in which they are bound. Again, this is similar to Clojure's Var behavior.
+  #
+  #    $somevar = Var.new('foo')
+  #    Var.with_bindings([[$somevar, 'mainbinding']]) do
+  #      puts Var.get($somevar)
+  #      Thread.new { puts Var.get($somevar) }.join
+  #      Thread.new { Var.set($somevar, 'threadval'); sleep 5; puts Var.get($somevar) }
+  #    end
+  #    puts Var.get($somevar)
+  #
+  #  Should produce the output:
+  #
+  #     mainbinding
+  #     foo
+  #     foo
+  #     threadval
+  #
+  # Usage:
+  #
+  # As Vars are generally used as global names (though perhaps with thread-local
+  # values), it would be common to assign them to Ruby global variables ($foo) or
+  # class variables acting as namespaced globals.  It might also make sense to use them
+  # as instance variables in singleton objects where thread-local state is needed.
+  #
+  #
   class Var < ZeevexConcurrency::Proxy
 
     def self.get(var, *defval)
       var.__getobj__
     rescue ::ZeevexConcurrency::UnboundError
       defval.length > 0 ? defval[0] : raise
+    end
+
+    class << self
+      alias_method :deref, :get
     end
 
     def self.register_thread_root(var, thread)
