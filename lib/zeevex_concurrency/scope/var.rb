@@ -62,6 +62,9 @@ module ZeevexConcurrency
   #
   class Var < ZeevexConcurrency::Proxy
 
+    #
+    # Get value of a Var. If unbound, use a supplied default value
+    #
     def self.get(var, *defval)
       var.__getobj__
     rescue ::ZeevexConcurrency::UnboundError
@@ -75,6 +78,11 @@ module ZeevexConcurrency
     def self.register_thread_root(var, thread)
     end
 
+    #
+    # Set value of a Var to the value. If there is no binding in the current
+    # thread, use the root binding frame. If there *is* a binding for the Var
+    # as established by e.g. `Var.with_bindings`, it modifies that binding in place.
+    #
     def self.set(var, value)
       b = find_binding(var.__id__)
       unless b
@@ -84,14 +92,43 @@ module ZeevexConcurrency
       b[var.__id__] = value
     end
 
+    #
+    # Determine whether this Var can be accessed without raising an UnboundError
+    # Note that a Var with a default value proc is considered bound, even though its
+    # value has not been calculated
+    #
     def self.bound?(var)
       var.__bound?
     end
 
+    #
+    # Does this Var have a dynamic or root value binding in this thread?
+    #
     def self.thread_bound?(var)
       !! find_binding(var.__id__)
     end
 
+    #
+    # Dynamically bind vars to new values for the duration of a block.
+    #
+    # The `lets` argument should be an Array of 2-tuple arrays of the form [var, value], e.g.
+    #
+    #     first = Var.new
+    #     other = Var.new('baz')
+    #     Var.with_bindings([[first, 'boundval'], [other, 'notbaz']]) do
+    #       puts Var.get(first)
+    #       puts Var.get(other)
+    #     end
+    #     puts Var.get(first) rescue puts "EXCEPTION"
+    #     puts Var.get(other)
+    #
+    # Should output
+    #
+    #     boundval
+    #     notbaz
+    #     EXCEPTION
+    #     baz
+    #
     def self.with_bindings(lets)
       idmap = lets.map {|(k,v)| [k.__id__, v]}
       Var.push_binding( Binding.new(::Hash[idmap]) )
@@ -100,6 +137,10 @@ module ZeevexConcurrency
       Var.pop_binding
     end
 
+    #
+    # Set the global default value of a Var. Affects all threads. Use of this
+    # method is discouraged.
+    #
     def self.set_root(var, val)
       var.__bind_with_value(val)
     end
@@ -108,10 +149,14 @@ module ZeevexConcurrency
 
     # fetch current binding array; autocreate with a single root (non-block-scope-based) binding
     # .set on vars without a block scope binding will use the root binding
-    def self.bindings(thr = ::Thread.current)
+    def self.bindings(thr = nil)
+      thr ||= ::Thread.current
       thr['__zx_var_bindings'] ||= [Binding.new({})]
     end
 
+    #
+    # Find the binding for a given Var by *id* (not by the Var object itself)
+    #
     def self.find_binding(id)
       bs = bindings
       for x in 1..bs.length
@@ -121,20 +166,35 @@ module ZeevexConcurrency
       nil
     end
 
-    def self.root_binding
-      bindings[0]
+    #
+    # This is the root binding frame for the current Thread by default, or
+    # for a given thread if supplied.
+    #
+    def self.root_binding(thr = nil)
+      bindings(thr)[0]
     end
 
-    def self.push_binding(binding)
-      bindings.push binding
+    #
+    # Push a Var binding frame onto the thread's stack
+    #
+    def self.push_binding(binding, thr = nil)
+      bindings(thr).push binding
     end
 
-    def self.pop_binding
-      bindings.pop
+    #
+    # Pop a Var binding frame off of the thread's stack
+    #
+    def self.pop_binding(thr = nil)
+      bindings(thr).pop
     end
 
     public
 
+    #
+    # Create a new Var. May be supplied with a single argument to be used as its
+    # default value, or a block which will be evaluated to generate the per-thread
+    # root value as needed.
+    #
     def initialize(*args, &block)
       raise ::ArgumentError, 'Only one value is accepted' if args.length > 1
 
@@ -146,8 +206,6 @@ module ZeevexConcurrency
         __bind_with_block(block)
       end
     end
-
-    @@_local_instance_vars = ["@__weak_backreferences__"]
 
     def __bind_with_value(value)
       @root_value = value
@@ -174,6 +232,8 @@ module ZeevexConcurrency
     def __bound?
       !! (@has_root_value || @root_proc || Var.find_binding(__id__))
     end
+
+    protected
 
     class Binding
       def initialize(val)
