@@ -4,16 +4,28 @@ require 'zeevex_concurrency/util/proxy.rb'
 
 module ZeevexConcurrency
   class Var < ZeevexConcurrency::Proxy
-    @@reaper_thread = nil
     @@refqueue = ::Ref::ReferenceQueue.new
+
+    @@registered_weakrefs = []
 
     @@reaper_thread = ::Thread.new do
       while true
-        ref = @@refqueue.pop
-        # if ref
-        #   puts "popped ref #{ref}, varid = #{ref.instance_variable_get("@zx_var_id")}"
-        # end
-        sleep 1
+        ref = @@refqueue.shift
+        if ref
+          varid = ref.instance_variable_get("@__zx_var_id")
+          thread = ref.instance_variable_get("@__zx_thread")
+
+          puts "popped ref #{ref}, varid = #{varid}, thread = #{thread.object}"
+          unless thread.object
+            puts "thread already GC'd"
+            return
+          end
+          puts "clearing ref"
+          bindings(thread.object)[0].delete(varid)
+        else
+          puts "<$>"
+        end
+        sleep 0.5
       end
     end
 
@@ -25,8 +37,10 @@ module ZeevexConcurrency
 
     def self.register_thread_root(var, thread)
       ref = ::Ref::WeakReference.new(var)
-      # puts "pushing ref to #{var.__id__}"
-      ref.instance_variable_set("@zx_var_id", var.__id__)
+      @@registered_weakrefs << ref
+      puts "pushing ref to #{var.__id__}"
+      ref.instance_variable_set("@__zx_var_id", var.__id__)
+      ref.instance_variable_set("@__zx_thread", ::Ref::WeakReference.new(thread))
       @@refqueue.monitor(ref)
     rescue
       puts "WARNING: Got exception in r_t_r: #{$!.inspect} #{$!.backtrace.join("\n  ")}"
@@ -65,8 +79,8 @@ module ZeevexConcurrency
 
     # fetch current binding array; autocreate with a single root (non-block-scope-based) binding
     # .set on vars without a block scope binding will use the root binding
-    def self.bindings
-      ::Thread.current['__zx_var_bindings'] ||= [Binding.new({})]
+    def self.bindings(thr = ::Thread.current)
+      thr['__zx_var_bindings'] ||= [Binding.new({})]
     end
 
     def self.find_binding(id)

@@ -1,6 +1,7 @@
 require File.join(File.dirname(__FILE__), '../spec_helper')
 require 'zeevex_concurrency/scope/var.rb'
 require 'thread'
+require 'pry'
 
 describe ZeevexConcurrency::Var do
   clazz = ZeevexConcurrency::Var
@@ -12,6 +13,10 @@ describe ZeevexConcurrency::Var do
 
   let :queue do
     Queue.new
+  end
+
+  before :all do
+    puts "Running on #{RUBY_VERSION}"
   end
 
   before do
@@ -222,26 +227,28 @@ describe ZeevexConcurrency::Var do
     end
 
     it 'should remove thread-root value when var goes out of scope' do
-      v = Var.new('temp')
+      $zxvar_for_rspec = Var.new('temp')
+      varid = $zxvar_for_rspec.__id__
+      q1 = Queue.new
       q2 = Queue.new
-      t1 = Thread.new(v) do |k|
-        Var.set(k, 'baz')
-        kid = k.__id__
-        k = nil
+      t1 = Thread.new do
+        Var.set($zxvar_for_rspec, 'baz')
         q2 << 'goahead main thread'
         # wait for main thread to force GC
-        queue.pop
-        Var.bindings[0][kid]
+        q1.pop
+        Var.root_binding[varid]
       end
 
       # wait for q2-thread to be ready
       q2.pop
-      v = nil
+      $zxvar_for_rspec
 
       # voodoo
-      5.times { GC.start; sleep 0.1 }
+      5.times { GC.start; ObjectSpace.garbage_collect; sleep 0.5 }
+      binding.pry
+      sleep 10
 
-      queue << 'goahead thread1'
+      q1 << 'goahead thread1'
 
       t1.value.should be_nil
     end
