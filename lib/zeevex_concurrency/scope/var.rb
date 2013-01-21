@@ -1,33 +1,8 @@
 require 'thread'
-require 'ref'
 require 'zeevex_concurrency/util/proxy.rb'
 
 module ZeevexConcurrency
   class Var < ZeevexConcurrency::Proxy
-    @@refqueue = ::Ref::ReferenceQueue.new
-
-    @@registered_weakrefs = []
-
-    @@reaper_thread = ::Thread.new do
-      while true
-        ref = @@refqueue.shift
-        if ref
-          varid = ref.instance_variable_get("@__zx_var_id")
-          thread = ref.instance_variable_get("@__zx_thread")
-
-          puts "popped ref #{ref}, varid = #{varid}, thread = #{thread.object}"
-          unless thread.object
-            puts "thread already GC'd"
-            return
-          end
-          puts "clearing ref"
-          bindings(thread.object)[0].delete(varid)
-        else
-          puts "<$>"
-        end
-        sleep 0.5
-      end
-    end
 
     def self.get(var, *defval)
       var.__getobj__
@@ -36,14 +11,6 @@ module ZeevexConcurrency
     end
 
     def self.register_thread_root(var, thread)
-      ref = ::Ref::WeakReference.new(var)
-      @@registered_weakrefs << ref
-      puts "pushing ref to #{var.__id__}"
-      ref.instance_variable_set("@__zx_var_id", var.__id__)
-      ref.instance_variable_set("@__zx_thread", ::Ref::WeakReference.new(thread))
-      @@refqueue.monitor(ref)
-    rescue
-      puts "WARNING: Got exception in r_t_r: #{$!.inspect} #{$!.backtrace.join("\n  ")}"
     end
 
     def self.set(var, value)
