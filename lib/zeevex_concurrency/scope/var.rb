@@ -59,11 +59,30 @@ module ZeevexConcurrency
   # class variables acting as namespaced globals.  It might also make sense to use them
   # as instance variables in singleton objects where thread-local state is needed.
   #
+  # Caveats:
+  #
+  # Thread-local root values are leaky.
+  #
+  # Instead of using thread-local root/default values, I recommend wrapping code in
+  # a `with_bindings` block. Bindings made via `with_bindings` are automatically
+  # cleaned up with the block exits, and therefore do not leak (assuming the block
+  # ever terminates)
   #
   class Var < ZeevexConcurrency::Proxy
 
     #
     # Get value of a Var. If unbound, use a supplied default value
+    #
+    # @overload get(var)
+    #   Gets the value of the Var; raises UnboundError if the Var has no value
+    #   @param [Var] the Var to dereference
+    #   @return [Object] the value, if Var is bound
+    #
+    # @overload get(var, default_value)
+    #   Gets the value of the Var; returns default_value if unbound
+    #   @param [Symbol] the Var to dereference
+    #   @param [Object] the default value to use if `var` is unbound
+    #   @return [Object] the Var's value or default_value
     #
     def self.get(var, *defval)
       var.__getobj__
@@ -83,6 +102,10 @@ module ZeevexConcurrency
     # thread, use the root binding frame. If there *is* a binding for the Var
     # as established by e.g. `Var.with_bindings`, it modifies that binding in place.
     #
+    # @param [Var] the variable to alter
+    # @param [Object] any Ruby object
+    # @return [Object] the value that was used
+    #
     def self.set(var, value)
       b = find_binding(var.__id__)
       unless b
@@ -97,12 +120,16 @@ module ZeevexConcurrency
     # Note that a Var with a default value proc is considered bound, even though its
     # value has not been calculated
     #
+    # @param [Var] the Var to examine
+    #
     def self.bound?(var)
       var.__bound?
     end
 
     #
     # Does this Var have a dynamic or root value binding in this thread?
+    #
+    # @param [Var] the Var to examine
     #
     def self.thread_bound?(var)
       !! find_binding(var.__id__)
@@ -129,10 +156,16 @@ module ZeevexConcurrency
     #     EXCEPTION
     #     baz
     #
+    #
+    # @param [Array] an array of 2-element arrays of the form [Var, value]
+    # For a block {|a,b,c| ... }
+    # @yield [var1, var2, ...] yields the array of vars as parameters
+    # @return [Object] the return value of the block
+    #
     def self.with_bindings(lets)
       idmap = lets.map {|(k,v)| [k.__id__, v]}
       Var.push_binding( Binding.new(::Hash[idmap]) )
-      yield
+      yield *lets.map(&:first)
     ensure
       Var.pop_binding
     end

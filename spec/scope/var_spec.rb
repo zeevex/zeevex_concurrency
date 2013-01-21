@@ -158,11 +158,22 @@ describe ZeevexConcurrency::Var do
     subject do
       Var.new("rootval")
     end
+
+    it 'should yield the vars to the block' do
+      v1 = Var.new
+      v2 = Var.new
+      Var.with_bindings([[v1, "val1"], [v2, "val2"]]) do |ivar1, ivar2|
+        ivar1.__id__.should == v1.__id__
+        ivar2.__id__.should == v2.__id__
+      end
+    end
+
     it 'should override root binding' do
       Var.with_bindings([[subject, "scopeval"]]) do
         subject.should == "scopeval"
       end
     end
+
     it 'should override thread-local binding' do
       Var.set(subject, "threadval")
       Var.with_bindings([[subject, "scopeval"]]) do
@@ -191,6 +202,7 @@ describe ZeevexConcurrency::Var do
       end
       subject.should == "rootval"
     end
+
     it 'should unwind even with exception' do
       begin
         Var.with_bindings([[subject, "scopeval"]]) do
@@ -200,6 +212,7 @@ describe ZeevexConcurrency::Var do
       end
       subject.should == "rootval"
     end
+
     it 'should unwind properly with Var.set in middle' do
       v2 = Var.new("v2")
       Var.with_bindings [[subject, "scopeval"]] do
