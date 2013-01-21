@@ -10,6 +10,8 @@ group :development do
   gem 'pry-git', :platform => :mri
   gem 'jist'
   gem 'ruby18_source_location', :platform => :mri_18
+  gem 'yard'
+  gem 'redcarpet'
 end
 
 # Specify your gem's dependencies in zeevex_concurrency.gemspec

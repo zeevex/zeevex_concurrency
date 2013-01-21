@@ -28,7 +28,7 @@ module ZeevexConcurrency
   #    Thread.new { Var.set($somevar, 'threadval'); sleep 5; puts Var.get($somevar) }
   #    puts Var.get($somevar)
   #
-  #  Should produce the output:
+  # Should produce the output:
   #
   #     foo
   #     threadval
@@ -45,7 +45,7 @@ module ZeevexConcurrency
   #    end
   #    puts Var.get($somevar)
   #
-  #  Should produce the output:
+  # Should produce the output:
   #
   #     mainbinding
   #     foo
@@ -61,7 +61,12 @@ module ZeevexConcurrency
   #
   # Caveats:
   #
-  # Thread-local root values are leaky.
+  # Thread-local root values are leaky. Once a thread-local root value for a Var has
+  # been set, the thread will retain that value even after the Var itself has gone
+  # out of scope and been garbage collected. This is okay for short-lived threads and
+  # long-lived Vars, but with long-lived threads and short-lived Vars, this can get
+  # ugly. For example, threads running in a thread pool or event loop would get polluted
+  # by lots of stale Var root values
   #
   # Instead of using thread-local root/default values, I recommend wrapping code in
   # a `with_bindings` block. Bindings made via `with_bindings` are automatically
@@ -75,13 +80,13 @@ module ZeevexConcurrency
     #
     # @overload get(var)
     #   Gets the value of the Var; raises UnboundError if the Var has no value
-    #   @param [Var] the Var to dereference
+    #   @param [Var] var the Var to dereference
     #   @return [Object] the value, if Var is bound
     #
     # @overload get(var, default_value)
     #   Gets the value of the Var; returns default_value if unbound
-    #   @param [Symbol] the Var to dereference
-    #   @param [Object] the default value to use if `var` is unbound
+    #   @param [Symbol] var the Var to dereference
+    #   @param [Object] default_value the default value to use if `var` is unbound
     #   @return [Object] the Var's value or default_value
     #
     def self.get(var, *defval)
@@ -102,8 +107,8 @@ module ZeevexConcurrency
     # thread, use the root binding frame. If there *is* a binding for the Var
     # as established by e.g. `Var.with_bindings`, it modifies that binding in place.
     #
-    # @param [Var] the variable to alter
-    # @param [Object] any Ruby object
+    # @param [Var] var the variable to alter
+    # @param [Object] value any Ruby object
     # @return [Object] the value that was used
     #
     def self.set(var, value)
@@ -120,7 +125,7 @@ module ZeevexConcurrency
     # Note that a Var with a default value proc is considered bound, even though its
     # value has not been calculated
     #
-    # @param [Var] the Var to examine
+    # @param [Var] var the Var to examine
     #
     def self.bound?(var)
       var.__bound?
@@ -129,7 +134,7 @@ module ZeevexConcurrency
     #
     # Does this Var have a dynamic or root value binding in this thread?
     #
-    # @param [Var] the Var to examine
+    # @param [Var] var the Var to examine
     #
     def self.thread_bound?(var)
       !! find_binding(var.__id__)
@@ -157,15 +162,15 @@ module ZeevexConcurrency
     #     baz
     #
     #
-    # @param [Array] an array of 2-element arrays of the form [Var, value]
+    # @param [Array] bindings lets an array of 2-element arrays of the form [Var, value]
     # For a block {|a,b,c| ... }
     # @yield [var1, var2, ...] yields the array of vars as parameters
     # @return [Object] the return value of the block
     #
-    def self.with_bindings(lets)
-      idmap = lets.map {|(k,v)| [k.__id__, v]}
+    def self.with_bindings(bindings)
+      idmap = bindings.map {|(k,v)| [k.__id__, v]}
       Var.push_binding( Binding.new(::Hash[idmap]) )
-      yield *lets.map(&:first)
+      yield *bindings.map(&:first)
     ensure
       Var.pop_binding
     end
@@ -174,14 +179,21 @@ module ZeevexConcurrency
     # Set the global default value of a Var. Affects all threads. Use of this
     # method is discouraged.
     #
-    def self.set_root(var, val)
-      var.__bind_with_value(val)
+    # @param [Var] var the Var to alter
+    # @param [Object] value the value to which the Var will have its root set
+    # @return [Object] the value
+    #
+    def self.set_root(var, value)
+      var.__bind_with_value(value)
+      value
     end
 
     protected
 
+    #
     # fetch current binding array; autocreate with a single root (non-block-scope-based) binding
     # .set on vars without a block scope binding will use the root binding
+    #
     def self.bindings(thr = nil)
       thr ||= ::Thread.current
       thr['__zx_var_bindings'] ||= [Binding.new({})]
@@ -203,21 +215,28 @@ module ZeevexConcurrency
     # This is the root binding frame for the current Thread by default, or
     # for a given thread if supplied.
     #
-    def self.root_binding(thr = nil)
-      bindings(thr)[0]
+    # @param [Thread] thread the thread
+    #
+    def self.root_binding(thread = nil)
+      bindings(thread)[0]
     end
 
     #
     # Push a Var binding frame onto the thread's stack
     #
-    def self.push_binding(binding, thr = nil)
-      bindings(thr).push binding
+    # @param [Binding] binding the binding frame to push
+    # @param [Thread] thread the thread
+    #
+    def self.push_binding(binding, thread = nil)
+      bindings(thread).push binding
     end
 
     #
     # Pop a Var binding frame off of the thread's stack
     #
-    def self.pop_binding(thr = nil)
+    # @param [Thread] thread the thread
+    #
+    def self.pop_binding(thread = nil)
       bindings(thr).pop
     end
 
@@ -227,6 +246,17 @@ module ZeevexConcurrency
     # Create a new Var. May be supplied with a single argument to be used as its
     # default value, or a block which will be evaluated to generate the per-thread
     # root value as needed.
+    #
+    # @overload initialize(value)
+    #   Creates a new Var with a global default value
+    #   @param [Object] value the value to use as process-wide default
+    #   @return [Var] the resulting Var
+    #
+    # @overload initialize()
+    #   Creates a new Var with no global default value.
+    #   If a block is supplied, it will be used to generate per-thread default root values.
+    #   Otherwise, the returned Var will be unbound
+    #   @return [Var] the resulting Var
     #
     def initialize(*args, &block)
       raise ::ArgumentError, 'Only one value is accepted' if args.length > 1
