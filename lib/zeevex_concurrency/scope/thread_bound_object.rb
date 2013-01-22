@@ -94,12 +94,12 @@ module ZeevexConcurrency
     # @return [ThreadBoundObject] self
     #
     # @api private
-    def __bind_to_thread(thr = nil)
-      thr ||= Thread.current
-      raise ArgumentError, "Must provide thread" unless thr.is_a?(Thread)
+    def __bind_to_thread(thread = nil)
+      thread ||= Thread.current
+      raise ArgumentError, "Must provide thread" unless thread.is_a?(Thread)
       raise BindingError,  "Object is already bound" if __bound?
       __check_bindability
-      @bound_thread_id = thr.__id__
+      @bound_thread_id = thread.__id__
       self
     end
 

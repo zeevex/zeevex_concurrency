@@ -30,8 +30,8 @@ module ZeevexConcurrency
   #
   # Should produce the output:
   #
-  #     foo
-  #     threadval
+  #    foo
+  #    threadval
   #
   # Vars also provide a dynamic binding facility through the use of Var.with_bindings. Such
   # bindings are similar to dynamic binding in any lisp, though they are visible only to the
@@ -47,10 +47,10 @@ module ZeevexConcurrency
   #
   # Should produce the output:
   #
-  #     mainbinding
-  #     foo
-  #     foo
-  #     threadval
+  #    mainbinding
+  #    foo
+  #    foo
+  #    threadval
   #
   # Usage:
   #
@@ -61,15 +61,17 @@ module ZeevexConcurrency
   #
   # Caveats:
   #
-  # Thread-local root values are leaky. Once a thread-local root value for a Var has
-  # been set, the thread will retain that value even after the Var itself has gone
-  # out of scope and been garbage collected. This is okay for short-lived threads and
-  # long-lived Vars, but with long-lived threads and short-lived Vars, this can get
-  # ugly. For example, threads running in a thread pool or event loop would get polluted
-  # by lots of stale Var root values
+  # @note Thread-local root values are leaky. Once a thread-local root value for a Var has
+  #  been set, the thread will retain that value even after the Var itself has gone
+  #  out of scope and been garbage collected. This is okay for short-lived threads and
+  #  long-lived Vars, but with long-lived threads and short-lived Vars, this can get
+  #  ugly. For example, threads running in a thread pool or event loop would get polluted
+  #  by lots of stale Var root values
+  #
+  #  See {Var.register_thread_root} for a way to be notified of new leaky root values.
   #
   # Instead of using thread-local root/default values, I recommend wrapping code in
-  # a `with_bindings` block. Bindings made via `with_bindings` are automatically
+  # a {Var.with_bindings} block. Bindings made via {Var.with_bindings} are automatically
   # cleaned up with the block exits, and therefore do not leak (assuming the block
   # ever terminates)
   #
@@ -89,8 +91,10 @@ module ZeevexConcurrency
     #   @param [Object] default_value the default value to use if `var` is unbound
     #   @return [Object] the Var's value or default_value
     #
+    # @raise ZeevexConcurrency::UnboundError if not bound and no default value supplied
+    #
     def self.get(var, *defval)
-      var.__getobj__
+      var.__send__ :__getobj__
     rescue ::ZeevexConcurrency::UnboundError
       defval.length > 0 ? defval[0] : raise
     end
@@ -99,13 +103,18 @@ module ZeevexConcurrency
       alias_method :deref, :get
     end
 
+    # Method called whenever a thread gets a new "thread root" value.
+    #
+    # @api private
+    # @note this no longer does anything useful, but feel free to monkeypatch it
+    #   if you have a scheme that works well for you.
     def self.register_thread_root(var, thread)
     end
 
     #
     # Set value of a Var to the value. If there is no binding in the current
     # thread, use the root binding frame. If there *is* a binding for the Var
-    # as established by e.g. `Var.with_bindings`, it modifies that binding in place.
+    # as established by e.g. {Var.with_bindings}, it modifies that binding in place.
     #
     # @param [Var] var the variable to alter
     # @param [Object] value any Ruby object
@@ -128,7 +137,7 @@ module ZeevexConcurrency
     # @param [Var] var the Var to examine
     #
     def self.bound?(var)
-      var.__bound?
+      var.__send__ :__bound?
     end
 
     #
@@ -181,18 +190,24 @@ module ZeevexConcurrency
     #
     # @param [Var] var the Var to alter
     # @param [Object] value the value to which the Var will have its root set
-    # @return [Object] the value
+    # @return [Object] the value that was set
     #
     def self.set_root(var, value)
-      var.__bind_with_value(value)
+      var.__send__ :__bind_with_value, value
+      register_thread_root(var, ::Thread.current)
       value
     end
 
     protected
 
     #
-    # fetch current binding array; autocreate with a single root (non-block-scope-based) binding
-    # .set on vars without a block scope binding will use the root binding
+    # Fetch current binding stack. If the thread has none, autocreate one with a single
+    # root (non-block-scope-based) binding.
+    #
+    # {Var.set} on vars without a block scope binding will use the root binding
+    #
+    # @param [Thread] thread the thread to pull the binding from, nil for current
+    # @return [Array] the binding stack of at least one Binding, oldest first (at index 0)
     #
     def self.bindings(thread = nil)
       thread ||= ::Thread.current
@@ -201,9 +216,16 @@ module ZeevexConcurrency
 
     #
     # Find the binding for a given Var by *id* (not by the Var object itself)
+    # If there is no binding, returns nil.
     #
-    def self.find_binding(id)
-      bs = bindings
+    # @note this will auto-create a root binding for a thread if none exists
+    #
+    # @param [Integer] id the var ID
+    # @param [Thread] thread the thread to pull the binding from, nil for current
+    # @return [Binding] the containing Binding object, or nil for no match
+    #
+    def self.find_binding(id, thread = nil)
+      bs = bindings(thread)
       for x in 1..bs.length
         binding = bs[bs.length - x]
         return binding if binding.include? id
@@ -213,9 +235,10 @@ module ZeevexConcurrency
 
     #
     # This is the root binding frame for the current Thread by default, or
-    # for a given thread if supplied.
+    # for a given thread if supplied. Will auto-create one if none exists.
     #
-    # @param [Thread] thread the thread
+    # @param [Thread] thread the thread to pull the binding from, nil for current
+    # @return [Binding] the root binding
     #
     def self.root_binding(thread = nil)
       bindings(thread)[0]
@@ -225,7 +248,7 @@ module ZeevexConcurrency
     # Push a Var binding frame onto the thread's stack
     #
     # @param [Binding] binding the binding frame to push
-    # @param [Thread] thread the thread
+    # @param [Thread] thread the thread to pull the binding from, nil for current
     #
     def self.push_binding(binding, thread = nil)
       bindings(thread).push binding
@@ -235,6 +258,7 @@ module ZeevexConcurrency
     # Pop a Var binding frame off of the thread's stack
     #
     # @param [Thread] thread the thread
+    # @return [Binding] the popped binding
     #
     def self.pop_binding(thread = nil)
       bindings(thread).pop
@@ -270,15 +294,14 @@ module ZeevexConcurrency
       end
     end
 
-    def __bind_with_value(value)
-      @root_value = value
-      @has_root_value  = true
+    protected
+
+    # @api private
+    def __bound?
+      !! (@has_root_value || @root_proc || Var.find_binding(__id__))
     end
 
-    def __bind_with_block(block)
-      @root_proc  = block
-    end
-
+    # @api private
     def __getobj__
       b = Var.find_binding(__id__)
       if b
@@ -292,25 +315,47 @@ module ZeevexConcurrency
       end
     end
 
-    def __bound?
-      !! (@has_root_value || @root_proc || Var.find_binding(__id__))
+    # @api private
+    def __bind_with_value(value)
+      @root_value = value
+      @has_root_value  = true
     end
 
-    protected
+    # @api private
+    def __bind_with_block(block)
+      @root_proc  = block
+    end
 
+    #
+    # Class representing a "dynamic binding" stack frame, containing one or more
+    # mutable VarId -> value. Each thread effectively has at least one, the "root frame",
+    # which is created on demand.
+    #
     class Binding
-      def initialize(val)
-        @val = val.dup
+      #
+      # @param [Hash] bindings the map of Var IDs -> values. Note, *NOT* Var objects, which
+      #   cannot be used as hash keys.
+      # @api private
+      def initialize(bindings)
+        @val = bindings.dup
       end
+
+      # @see Hash#fetch
       def fetch(key, defval=nil)
         @val.fetch(key, defval)
       end
+
+      # @see Hash#[]
       def [](key)
         @val[key]
       end
+
+      # @see Hash#[]=
       def []=(key, val)
         @val[key] = val
       end
+
+      # @see Hash#include?
       def include?(key)
         @val.include?(key)
       end
