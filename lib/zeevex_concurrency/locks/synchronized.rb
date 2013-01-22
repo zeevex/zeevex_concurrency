@@ -9,6 +9,11 @@ require 'zeevex_concurrency'
 #   which means this can also be used as a thread-safe reference
 #   (like a 'volatile' variable in Java)
 class ZeevexConcurrency::Synchronized < ZeevexProxy::Base
+  #
+  # Initializes the object.
+  #
+  # @param [Object] obj the object to wrap
+  # @param [Mutex] mutex if supplied, the Mutex or Monitor to use
   def initialize(obj, mutex = nil)
     super(obj)
     @mutex = mutex || ::Mutex.new
@@ -38,7 +43,12 @@ class ZeevexConcurrency::Synchronized < ZeevexProxy::Base
 end
 
 #
-# make object synchronized unless already synchronized
+# Wrap object with Synchronized unless already wrapped.
+#
+# @see ZeevexConcurrency::Synchronized#initialize
+#
+# @param [Object] obj the object to wrap
+# @param [Mutex] mutex if supplied, the Mutex or Monitor to use
 #
 def ZeevexConcurrency.Synchronized(obj, mutex = nil)
   if obj.respond_to?(:__getobj__)
