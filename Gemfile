@@ -11,7 +11,7 @@ group :development do
   gem 'jist'
   gem 'ruby18_source_location', :platform => :mri_18
   gem 'yard'
-  gem 'redcarpet'
+  gem 'redcarpet', :platform => :mri
 end
 
 # Specify your gem's dependencies in zeevex_concurrency.gemspec
