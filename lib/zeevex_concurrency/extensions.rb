@@ -11,11 +11,11 @@ module ZeevexConcurrency
   #
   # Optional `concurrency` argument is interpreted thusly:
   #
-  # * positive integer:   use a new pool with up to that many threads (no more than length of list)
-  # * no / nil argument:  use a new pool with default number of threads (2 * cpu_count)
-  # * -1:                 use the default Future thread pool
-  # * 0 or INT_MAX:       use exactly as many threads as length of list (fully concurrent)
-  # * pool or event_loop: use the provided executor
+  # positive integer::   use a new pool with up to that many threads (no more than length of list)
+  # no / nil argument::  use a new pool with default number of threads (2 * cpu_count)
+  # -1::                 use the default Future thread pool
+  # 0 or INT_MAX::       use exactly as many threads as length of list (fully concurrent)
+  # pool or event_loop:: use the provided executor
   #
   # @param [Enumerable] collection the collection to map over
   # @param [Integer, nil, ZeevexConcurrency::ThreadPool::Abstract] concurrency a thread pool spec
@@ -39,11 +39,11 @@ module ZeevexConcurrency
   # Construct or return a thread pool matching `spec` argument, which is interpreted
   # thusly:
   #
-  # * positive integer:   use a new pool with up to that many threads (no more than bounded_size if supplied)
-  # * nil:                use a new pool with default number of threads (2 * cpu_count)
-  # * -1:                 use the default Future thread pool, or defpool if supplied
-  # * 0 or INT_MAX:       use exactly as many threads as bounded_size (fully concurrent)
-  # * pool or event_loop: use the provided executor
+  # positive integer::   use a new pool with up to that many threads (no more than bounded_size if supplied)
+  # nil::                use a new pool with default number of threads (2 * cpu_count)
+  # -1::                 use the default Future thread pool, or defpool if supplied
+  # 0 or INT_MAX::       use exactly as many threads as bounded_size (fully concurrent)
+  # pool or event_loop:: use the provided executor
   #
   # @param [Integer, nil, ZeevexConcurrency::ThreadPool::Abstract] spec 
   #   a thread pool spec as above
