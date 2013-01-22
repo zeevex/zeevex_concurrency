@@ -7,7 +7,7 @@ require 'atomic'
 
 module ZeevexConcurrency::ThreadPool
   class Abstract
-    include ZeevexConcurrency::Refcount
+    include ZeevexConcurrency::Util::Refcount
 
     def initialize(*args)
       _initialize_refcount

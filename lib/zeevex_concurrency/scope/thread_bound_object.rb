@@ -1,6 +1,6 @@
 require 'zeevex_concurrency'
 module ZeevexConcurrency
-  class BindingError < StandardError; end
+  class BindingError < ::ZeevexConcurrency::ConcurrencyError; end
 
   #
   # This is a wrapper for objects which allows them to be in one of 3 states:

@@ -1,0 +1,14 @@
+- deferreds: Promise, Delay
+- Dataflow
+- Multiplex
+- All the thread pools
+
+lesser:
+
+- Proxy
+- Synchronized
+
+More usage notes:
+
+- ThreadBoundObject
+- Var

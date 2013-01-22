@@ -75,7 +75,7 @@ module ZeevexConcurrency
   # cleaned up with the block exits, and therefore do not leak (assuming the block
   # ever terminates)
   #
-  class Var < ZeevexConcurrency::Proxy
+  class Var < ZeevexConcurrency::Util::Proxy
 
     #
     # Get value of a Var. If unbound, use a supplied default value

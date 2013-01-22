@@ -4,7 +4,7 @@ module ZeevexConcurrency
   module All
     def self.included(base)
       base.class_eval do
-        include ZeevexConcurrency::Logging
+        include ZeevexConcurrency::Util::Logging
       end
     end
   end
@@ -27,7 +27,7 @@ require 'zeevex_concurrency/locks/synchronized'
 require 'logger'
 require 'zeevex_concurrency/util/nil_logger'
 
-ZeevexConcurrency.logger = ZeevexConcurrency::NilLogger.new
+ZeevexConcurrency.logger = ZeevexConcurrency::Util::NilLogger.new
 
 require 'zeevex_concurrency/util/logging'
 require 'zeevex_concurrency/executors/event_loop'

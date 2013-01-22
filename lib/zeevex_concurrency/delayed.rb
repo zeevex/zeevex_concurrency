@@ -136,7 +136,7 @@ class ZeevexConcurrency::Delayed
 
   ###
 
-  class CancelledException < StandardError; end
+  class CancelledException < ::ZeevexConcurrency::ConcurrencyError; end
 end
 
 require 'zeevex_concurrency/delayed/convenience_methods'
