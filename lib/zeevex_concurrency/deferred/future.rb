@@ -16,6 +16,18 @@ class ZeevexConcurrency::Future < ZeevexConcurrency::Delayed
 
   @@worker_pool = nil
 
+  #
+  # Create a new future onto a worker pool. Unlike Future.create, a Future created
+  # with Future.new is *not* automatically enqueued for execution.
+  #
+  # @param [Proc] computation a proc which will be executed to yield the Future's result
+  # @param [Hash] options a hash of options
+  # @option options [ZeevexConcurrency::ThreadPool::Abstract] :observers an observer object or list of objects which
+  #    have an #update method - this functions in the style of the standard Observable system.
+  # @param [Block] block if callable is nil, this block will be used instead
+  #
+  # @see create
+  #
   def initialize(computation = nil, options = {}, &block)
     raise ArgumentError, "Must provide computation or block for a future" unless (computation || block)
 
@@ -30,10 +42,26 @@ class ZeevexConcurrency::Future < ZeevexConcurrency::Delayed
     end
   end
 
+  #
+  # Stop the current in-scope Future worker pool.
+  #
   def self.shutdown
     self.worker_pool.stop
   end
 
+  #
+  # Create and enqueue a new future onto a worker pool.
+  #
+  # @param [Proc] callable a proc which will be executed to yield the Future's result
+  # @param [Hash] options a hash of options
+  # @option options [ZeevexConcurrency::ThreadPool::Abstract] :executor the executor to use
+  # @option options [ZeevexConcurrency::ThreadPool::Abstract] :event_loop a synonym for :executor
+  # @option options [ZeevexConcurrency::ThreadPool::Abstract] :observers an observer object or list of objects which
+  #    have an #update method - this functions in the style of the standard Observable system.
+  # @param [Block] block if callable is nil, this block will be used instead
+  #
+  # @see initialize
+  #
   def self.create(callable=nil, options = {}, &block)
     nfuture = ZeevexConcurrency::Future.new(callable, options, &block)
     (options.delete(:event_loop) || options.delete(:executor) || worker_pool).enqueue nfuture
@@ -41,12 +69,21 @@ class ZeevexConcurrency::Future < ZeevexConcurrency::Delayed
     nfuture
   end
 
+  #
+  # Sets the global process-wide default worker pool.
+  #
+  # @return [ZeevexConcurrency::ThreadPool::Abstract] the in-scope worker pool for newly
+  #   created Futures. Will be the thread-local pool if one is in scope; otherwise it's
+  #   the process-wide pool.
+  #
   def self.worker_pool
     Thread.current[:_future_worker_pool] || @@worker_pool
   end
 
   #
-  # Sets the global process-wide default worker pool
+  # Sets the global process-wide default worker pool.
+  #
+  # @param [ZeevexConcurrency::ThreadPool::Abstract] pool a pool to use
   #
   def self.global_worker_pool=(pool)
     check_pool pool
@@ -57,6 +94,8 @@ class ZeevexConcurrency::Future < ZeevexConcurrency::Delayed
 
   #
   # Sets the default worker pool for Futures created from this thread
+  #
+  # @param [ZeevexConcurrency::ThreadPool::Abstract] pool a pool to use
   #
   def self.worker_pool=(pool)
     check_pool pool
@@ -88,7 +127,12 @@ class ZeevexConcurrency::Future < ZeevexConcurrency::Delayed
   end
 
   #
-  # Execute block with the Future worker pool set to `pool`
+  # Execute block with the Future worker pool set to `pool` for the duration of the block.
+  # The setting is thread-local and functions as a dynamic scope; nested `with_worker_pool`
+  # calls are allowed.
+  #
+  # @param [ZeevexConcurrency::ThreadPool::Abstract] pool the pool to use
+  # @yield [] the block is executed with no arguments
   #
   def self.with_worker_pool(pool)
     old_pool = Thread.current[:_future_worker_pool]
@@ -106,6 +150,13 @@ class ZeevexConcurrency::Future < ZeevexConcurrency::Delayed
 
 
   module Map
+    #
+    # Projects the value of this future as a param into a block which is evaluated in
+    # a new Future, and returns that new future.
+    #
+    # @yield [value] value the resulting value of this Future
+    # @return [Future] the new Future
+    #
     def map(&block)
       new_future = ZeevexConcurrency::Future.new {}
       self.onComplete do |val, success|
@@ -130,12 +181,34 @@ class ZeevexConcurrency::Future < ZeevexConcurrency::Delayed
   end
 
   module FlatMap
+    #
+    # Projects the value of this future as a param into a block which is evaluated in
+    # a new Future, and returns that new future. The difference from #map is that
+    # the value of this Future is assumed to be a Future, and it is the value from
+    # *that* inner Future that is projected. Think of it as "flattening" two nested
+    # futures into one before mapping.
+    #
+    # @yield [value] value the resulting value of this Future, "flattened"
+    # @return [Future] the new Future
+    #
     def flat_map(&block)
       map { |input| block.call(input).value }
     end
   end
 
   module AndThen
+    #
+    # Projects the value of this future as a param into a block which is evaluated
+    # in a new Future. Unlike #map, however, the result of the resulting Future is
+    # discarded. The created Future is used for its side effects, not its value.
+    # This might be useful in logging, sequencing callbacks, etc.
+    #
+    # Think of it as Object#tap for Futures.
+    #
+    # @yield [value] value the resulting value of this Future
+    # @return [Future] the new Future - while returning a different object, it will
+    #   have the same value as this Future
+    #
     def and_then(&block)
       transform lambda { |result| block.call(result, true) rescue nil; result },
                 lambda { |error|  block.call(error, false) rescue nil; error }
@@ -143,6 +216,15 @@ class ZeevexConcurrency::Future < ZeevexConcurrency::Delayed
   end
 
   module Fallback
+    #
+    # Returns a new Future such that, if this Future succeeds, the new Future will
+    # have the same value as this one.
+    #
+    # If this Future fails, the new Future will have the result of the supplied block
+    # which is executed in the future
+    #
+    # @return [Future] the new Future
+    #
      def fallback_to(&block)
       new_future = ZeevexConcurrency::Future.new {}
       self.onComplete do |val, success|
@@ -166,6 +248,20 @@ class ZeevexConcurrency::Future < ZeevexConcurrency::Delayed
   end
 
   module Transform
+    #
+    # Given two transformation functions of 1 argument each, this method will
+    # yield a new Future which has the result of applying the appropriate function
+    # to the result of this Future.
+    #
+    # If this Future is successful, result_proc is applied to the value of this Future.
+    #
+    # If this Future is unsuccessful, failure_proc is applied to the Exception
+    # from this Future.
+    #
+    # @param [Proc] result_proc the proc which transforms a successful result
+    # @param [Proc] failure_proc the proc which transforms a failure result (exception)
+    # @return [Future] a Future which yields the transformed result of this Future
+    #
     def transform(result_proc, failure_proc)
       unless result_proc && failure_proc
         raise ArgumentError, 'Must suppluy both success and failure transformer'
@@ -194,6 +290,15 @@ class ZeevexConcurrency::Future < ZeevexConcurrency::Delayed
   end
 
   module Filter
+    #
+    # Tests the value of this Future against a filter function. If the filter function
+    # returns a truthy value, then the new Future has the same value as this Future. If
+    # the filter function returns a falsy value, then the new Future will be a failed
+    # future containing an IndexError exception.
+    #
+    # @param [Block] filter_proc A function of one argument which yields a truthy or falsy value
+    # @return [Future] a new Future
+    #
     def filter(&filter_proc)
       unless filter_proc
         raise ArgumentError, 'Must supply filter proc'

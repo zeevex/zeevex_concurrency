@@ -56,7 +56,8 @@
 ** Clojure-like Dynamic Vars
 *** TODO binding propagation - dynamic scope can be closed over when
     block/proc is run on another thread (e.g. on an executor)
-
+*** TODO cleanup thread root binding leak - when var is deallocated,
+    it does not delete any of its per-thread bindings
 
 ** Testing
 *** TODO a long running test with scheduler fuzzing
