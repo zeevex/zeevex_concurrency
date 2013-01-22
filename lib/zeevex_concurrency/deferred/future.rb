@@ -69,7 +69,8 @@ class ZeevexConcurrency::Future < ZeevexConcurrency::Delayed
   #    have an #update method - this functions in the style of the standard Observable system.
   # @param [Block] block if callable is nil, this block will be used instead
   #
-  # @see initialize
+  # @see {Future#initialize}
+  # @see {Observable}
   #
   def self.create(callable=nil, options = {}, &block)
     nfuture = ZeevexConcurrency::Future.new(callable, options, &block)
@@ -208,11 +209,11 @@ class ZeevexConcurrency::Future < ZeevexConcurrency::Delayed
   module AndThen
     #
     # Projects the value of this future as a param into a block which is evaluated
-    # in a new Future. Unlike #map, however, the result of the resulting Future is
+    # in a new Future. Unlike {Map#map}, however, the result of the resulting Future is
     # discarded. The created Future is used for its side effects, not its value.
     # This might be useful in logging, sequencing callbacks, etc.
     #
-    # Think of it as Object#tap for Futures.
+    # Think of it as {::Kernel#tap} for Futures.
     #
     # @yield [value] value the resulting value of this Future
     # @return [Future] the new Future - while returning a different object, it will
