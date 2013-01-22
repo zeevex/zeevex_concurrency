@@ -1,6 +1,3 @@
-- deferreds: Promise, Delay
-- Dataflow
-- Multiplex
 - All the thread pools
 
 lesser:
@@ -12,3 +9,11 @@ More usage notes:
 
 - ThreadBoundObject
 - Var
+- Multiplex
+- all Deferreds (also in REAMDE)
+
+DONE:
+
+- deferreds: Promise, Delay
+- Dataflow
+- Multiplex
