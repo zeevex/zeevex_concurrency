@@ -1,6 +1,15 @@
 require 'timeout'
 require 'zeevex_concurrency'
-require 'zeevex_concurrency/deferred/delayed'
+require 'zeevex_concurrency/delayed'
+require 'zeevex_concurrency/delayed/bindable'
+require 'zeevex_concurrency/delayed/latch_based'
+require 'zeevex_concurrency/delayed/cancellable'
+require 'zeevex_concurrency/delayed/observable'
+require 'zeevex_concurrency/delayed/callbacks'
+require 'zeevex_concurrency/delayed/dataflowable'
+require 'zeevex_concurrency/delayed/multiplexing'
+require 'zeevex_concurrency/delayed/for_each'
+
 require 'zeevex_concurrency/executors/event_loop'
 require 'zeevex_concurrency/executors/thread_pool'
 

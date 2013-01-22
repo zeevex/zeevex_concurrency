@@ -1,6 +1,7 @@
 require 'thread'
 require 'zeevex_concurrency'
-require 'zeevex_concurrency/deferred/delayed'
+require 'zeevex_concurrency/delayed'
+require 'zeevex_concurrency/delayed/bindable'
 
 class ZeevexConcurrency::Delay < ZeevexConcurrency::Delayed
   include ZeevexConcurrency::Delayed::Bindable
