@@ -98,7 +98,7 @@ class ZeevexConcurrency::Future < ZeevexConcurrency::Delayed
   end
 
   #
-  # Sets the global process-wide default worker pool.
+  # Retrieves the currently in-scope default worker pool for newly created Futures.
   #
   # @return [ZeevexConcurrency::ThreadPool::Abstract] the in-scope worker pool for newly
   #   created Futures. Will be the thread-local pool if one is in scope; otherwise it's
@@ -109,7 +109,9 @@ class ZeevexConcurrency::Future < ZeevexConcurrency::Delayed
   end
 
   #
-  # Sets the global process-wide default worker pool.
+  # Sets the global process-wide default worker pool. Note that if there is an
+  # in-scope thread-local worker pool binding, this will not affect newly
+  # created Futures until all such bindings are removed.
   #
   # @param [ZeevexConcurrency::ThreadPool::Abstract] pool a pool to use
   #
