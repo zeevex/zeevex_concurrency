@@ -194,9 +194,9 @@ module ZeevexConcurrency
     # fetch current binding array; autocreate with a single root (non-block-scope-based) binding
     # .set on vars without a block scope binding will use the root binding
     #
-    def self.bindings(thr = nil)
-      thr ||= ::Thread.current
-      thr['__zx_var_bindings'] ||= [Binding.new({})]
+    def self.bindings(thread = nil)
+      thread ||= ::Thread.current
+      thread['__zx_var_bindings'] ||= [Binding.new({})]
     end
 
     #
@@ -237,7 +237,7 @@ module ZeevexConcurrency
     # @param [Thread] thread the thread
     #
     def self.pop_binding(thread = nil)
-      bindings(thr).pop
+      bindings(thread).pop
     end
 
     public

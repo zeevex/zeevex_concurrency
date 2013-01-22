@@ -21,7 +21,7 @@ module ZeevexConcurrency::Delayed::Cancellable
       return false if executed?
       return true  if cancelled?
       @cancelled = true
-      smash CancelledException.new
+      smash ZeevexConcurrency::Delayed::CancelledException.new
       true
     end
   end
