@@ -1,5 +1,12 @@
 require 'timeout'
-require 'zeevex_concurrency/deferred/delayed'
+require 'zeevex_concurrency/delayed'
+require 'zeevex_concurrency/delayed/bindable'
+require 'zeevex_concurrency/delayed/latch_based'
+require 'zeevex_concurrency/delayed/observable'
+require 'zeevex_concurrency/delayed/callbacks'
+require 'zeevex_concurrency/delayed/dataflowable'
+require 'zeevex_concurrency/delayed/multiplexing'
+require 'zeevex_concurrency/delayed/for_each'
 
 class ZeevexConcurrency::Promise < ZeevexConcurrency::Delayed
   include ZeevexConcurrency::Delayed::Observable
@@ -8,6 +15,7 @@ class ZeevexConcurrency::Promise < ZeevexConcurrency::Delayed
   include ZeevexConcurrency::Delayed::LatchBased
   include ZeevexConcurrency::Delayed::Dataflowable
   include ZeevexConcurrency::Delayed::Multiplexing
+  include ZeevexConcurrency::Delayed::ForEach
 
   def initialize(computation = nil, options = {}, &block)
 

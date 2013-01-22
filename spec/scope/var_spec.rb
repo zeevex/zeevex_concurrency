@@ -15,10 +15,6 @@ describe ZeevexConcurrency::Var do
     Queue.new
   end
 
-  before :all do
-    puts "Running on #{RUBY_VERSION}"
-  end
-
   before do
     queue
     subject
