@@ -104,6 +104,9 @@ describe ZeevexConcurrency::Future do
     end
 
     it          { should be_ready }
+    it          { should_not be_failed }
+    it          { should be_successful }
+
     its(:value) { should == 56 }
     it 'should return same value for repeated calls' do
       subject.value
@@ -124,10 +127,10 @@ describe ZeevexConcurrency::Future do
       subject.wait
     end
 
-    it 'should be ready' do
-      subject.should be_ready
-    end
-    
+    it { should be_ready }
+    it { should be_failed }
+    it { should_not be_successful }
+
     it 'should reraise exception' do
       expect { subject.value }.
         to raise_error(FooBar)
@@ -249,6 +252,8 @@ describe ZeevexConcurrency::Future do
     it 'should be marked as ready after cancellation but before execution' do
       subject.cancel
       subject.should be_ready
+      subject.should be_failed
+      subject.should_not be_successful
     end
 
     it 'should be cancelled after cancellation and attempted execution' do
@@ -256,6 +261,8 @@ describe ZeevexConcurrency::Future do
       resume_futures
       wait_for_queue_to_empty
       subject.should be_cancelled
+      subject.should be_failed
+      subject.should_not be_successful
     end
 
     it 'should skip execution after cancellation' do

@@ -49,7 +49,7 @@ class ZeevexConcurrency::Future < ZeevexConcurrency::Delayed
   #
   # @param [Proc] computation a proc which will be executed to yield the Future's result
   # @param [Hash] options a hash of options
-  # @option options [ZeevexConcurrency::ThreadPool::Abstract] :observers an observer object or list of objects which
+  # @option options [#update] :observers an observer object or list of objects which
   #    have an #update method - this functions in the style of the standard Observable system.
   # @param [Block] block if callable is nil, this block will be used instead
   #
@@ -83,7 +83,7 @@ class ZeevexConcurrency::Future < ZeevexConcurrency::Delayed
   # @param [Hash] options a hash of options
   # @option options [ZeevexConcurrency::ThreadPool::Abstract] :executor the executor to use
   # @option options [ZeevexConcurrency::ThreadPool::Abstract] :event_loop a synonym for :executor
-  # @option options [ZeevexConcurrency::ThreadPool::Abstract] :observers an observer object or list of objects which
+  # @option options [#update] :observers an observer object or list of objects which
   #    have an #update method - this functions in the style of the standard Observable system.
   # @param [Block] block if callable is nil, this block will be used instead
   #

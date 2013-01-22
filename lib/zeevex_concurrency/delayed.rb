@@ -14,6 +14,9 @@ class ZeevexConcurrency::Delayed
   def ready?; raise NotImplementedError; end
 
 
+  #
+  # @return [Exception, nil] the exception that failed this Delayed, if any
+  #
   def exception
     @exception
   end
@@ -23,8 +26,20 @@ class ZeevexConcurrency::Delayed
   #
   # @return [Boolean] true if the Delayed failed during evaluation
   #
-  def exception?
+  def failed?
     !! @exception
+  end
+
+  #
+  # Check to see whether the Delayed object was successful. Only
+  # call on complete computations.
+  #
+  # @return [Boolean] true if the Delayed was successful
+  # @raise ZeevexConcurrency::Delayed::IncompleteError if this computation has not completed
+  #
+  def successful?
+    raise IncompleteError unless ready?
+    @success
   end
 
   #
@@ -122,6 +137,10 @@ class ZeevexConcurrency::Delayed
     @executed = true
   end
 
+  #
+  # All Delayed classes should implement or call this method to deliver the
+  # successful value or failure exception object to "consumers" of the Delayed
+  #
   def fulfill(value, success = true)
     _fulfill(value, success)
   end
@@ -136,7 +155,16 @@ class ZeevexConcurrency::Delayed
 
   ###
 
+  #
+  # Raised when a fetch of the result value is attempted from a cancelled future.
+  #
   class CancelledException < ::ZeevexConcurrency::ConcurrencyError; end
+
+  #
+  # Raised when a non-waiting method which requires a complete computation
+  # is called on an incomplete computation
+  #
+  class IncompleteError < ::ZeevexConcurrency::ConcurrencyError; end
 end
 
 require 'zeevex_concurrency/delayed/convenience_methods'

@@ -39,7 +39,7 @@ class ZeevexConcurrency::Promise < ZeevexConcurrency::Delayed
   #     customary not to provide a computation to bind to the Promise, but rather to have app code
   #     simply set the result.
   # @param [Hash] options a hash of options
-  # @option options [ZeevexConcurrency::ThreadPool::Abstract] :observers an observer object or list of objects which
+  # @option options [#update] :observers an observer object or list of objects which
   #    have an #update method - this functions in the style of the standard Observable system.
   # @param [Block] block if computation is nil, this block may be used instead. Again, it is customary not
   #    to supply one.

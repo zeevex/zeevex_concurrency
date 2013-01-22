@@ -13,6 +13,6 @@ module ZeevexConcurrency::Delayed::ForEach
   #
   def foreach
     wait
-    yield value unless exception?
+    yield value unless failed?
   end
 end
