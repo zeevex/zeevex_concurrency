@@ -1,3 +1,4 @@
 --embed-mixin 'ZeevexConcurrency::Delayed::*'
 --embed-mixin 'ZeevexConcurrency::Future::*'
+--embed-mixin 'ZeevexConcurrency::ThreadPool::Stubs'
 --no-private
