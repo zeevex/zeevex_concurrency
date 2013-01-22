@@ -13,6 +13,24 @@ require 'zeevex_concurrency/delayed/for_each'
 require 'zeevex_concurrency/executors/event_loop'
 require 'zeevex_concurrency/executors/thread_pool'
 
+#
+# A Future is a deferred computation which is intended to be executed asynchronously on
+# another thread. It provides facilities for:
+#
+# - Blocking until the Future has completed
+# - Polling for completion
+# - Callbacks upon completion (both Observable and Scala style)
+# - Blocking waits from multiple "clients"
+# - Functional transformations into other Futures a la Scala
+# - Transformation into an Oz-style Dataflow variable
+# - 'select' style waiting on multiple Futures through Multiplexing
+# - Cancelling outstanding Futures
+# - Multiple worker pools
+#
+# The Future class creates a default process-wide pool of worker threads to use for processing
+# Futures. Each Future may also be enqueued on a specific pool via options to the
+# {Future.create} method or via a dynamic scope created via {Future.with_worker_pool}.
+#
 class ZeevexConcurrency::Future < ZeevexConcurrency::Delayed
   include ZeevexConcurrency::Delayed::Bindable
   include ZeevexConcurrency::Delayed::LatchBased
@@ -26,7 +44,7 @@ class ZeevexConcurrency::Future < ZeevexConcurrency::Delayed
   @@worker_pool = nil
 
   #
-  # Create a new future onto a worker pool. Unlike Future.create, a Future created
+  # Create a new future. Unlike Future.create, a Future created
   # with Future.new is *not* automatically enqueued for execution.
   #
   # @param [Proc] computation a proc which will be executed to yield the Future's result
