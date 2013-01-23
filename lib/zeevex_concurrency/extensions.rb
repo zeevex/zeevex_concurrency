@@ -36,9 +36,7 @@ module ZeevexConcurrency
   ensure
     # only stop the ones we create
     if pool && should_shutdown
-      puts "[stopping pool]"
       pool.stop
-      puts "[stopped pool]"
     end
   end
 
