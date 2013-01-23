@@ -20,4 +20,15 @@ describe 'spec timeout tests', :test_timeout => 5 do
   it 'should fail with a bad expectation' do
     1.should == 2
   end
+
+  let :mymock do
+    mock()
+  end
+
+  it 'should run 10 times', :repeat => 10 do
+    puts "rUN"
+    mymock.should_receive(:foo)
+    mymock.foo
+    "a".should == "a"
+  end
 end
