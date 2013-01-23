@@ -30,7 +30,7 @@ Gem::Specification.new do |gem|
   ## other headius utils
   # s.add_dependency 'thread_safe'
 
-  gem.add_development_dependency 'rspec', '~> 2.9.0'
+  gem.add_development_dependency 'rspec', '~> 2.12.0'
   gem.add_development_dependency 'rake'
   gem.add_development_dependency 'pry'
 end

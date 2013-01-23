@@ -449,8 +449,16 @@ module ZeevexConcurrency::ThreadPool
 
         @stop_requested = true
 
-        @group.list.each do |thr|
-          thr.kill
+        # XXX: this is a temp hack and should skip thr.kill on ALL non-green-thread platforms,
+        #      possibly even those with green threads (because of risk of corruption)
+        unless Kernel.const_defined?('JRuby')
+          thr_list = @group.list.dup
+          Thread.new do
+            sleep 10
+            thr_list.each do |thr|
+              thr.kill if thr.alive?
+            end
+          end
         end
 
         @busy_count.set 0

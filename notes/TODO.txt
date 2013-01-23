@@ -60,8 +60,12 @@
     it does not delete any of its per-thread bindings
 
 ** Testing
+*** TODO find a way to abort deadlocked rspec examples without blowing
+    up rspec (it gives some error about << on nil if a Timeout error
+    is raised)
 *** TODO a long running test with scheduler fuzzing
-
+*** TODO check out mutation gems (e.g. https://github.com/mbj/mutant)
+*** TODO check out concurrency test helper gems (http://r3t.rubyforge.org/)
 
 
 # -*- mode: org-mode; -*-

@@ -26,14 +26,18 @@ module ZeevexConcurrency
   # @see Enumerable#pmap
   #
   def self.greedy_pmap(collection, concurrency = nil, &block)
+    pool = should_shutdown = nil
     raise ArgumentError, "Requires collection" unless collection && collection.respond_to?(:map)
     raise ArgumentError, "Requires block"      if block.nil?
-    pool = thread_pool_from_spec(concurrency, nil, collection.length)
+    (pool, should_shutdown) = thread_pool_from_spec(concurrency, nil, collection.length)
     collection.map do |input|
       ZeevexConcurrency::Future.create(nil, :executor => pool) { block.call input }
     end.map(&:value)
   ensure
-    pool.stop if pool
+    # only stop the ones we create
+    if pool && should_shutdown
+      pool.stop
+    end
   end
 
   # Construct or return a thread pool matching `spec` argument, which is interpreted
@@ -51,19 +55,22 @@ module ZeevexConcurrency
   #   the pool to use by default if `spec` == -1
   # @param [nil, Integer] bounded_size if provided, the max size the thread pool
   #   should reach; if nil may mean 2*CPUs
+  # @return [Array<ZeevexConcurrency::ThreadPool::Abstract, Boolean>] a pair of (pool, was_created) - was_created is
+  #    true if the pool was newly created rather than taken from the environment. Use this to determine whether to
+  #    shut down the pool after done using it.
   #
   def self.thread_pool_from_spec(spec, defpool = nil, bounded_size = nil)
     case spec
     when 0
-      ZeevexConcurrency::ThreadPool::FixedPool.new(bounded_size)
+      [ZeevexConcurrency::ThreadPool::FixedPool.new(bounded_size), true]
     when ZeevexConcurrency::ThreadPool::Abstract, ZeevexConcurrency::EventLoop
-      spec
+      [spec, false]
     when nil
-      ZeevexConcurrency::ThreadPool::FixedPool.new
+      [ZeevexConcurrency::ThreadPool::FixedPool.new, true]
     when -1
-      defpool || ZeevexConcurrency::Future.worker_pool
+      [defpool || ZeevexConcurrency::Future.worker_pool, false]
     when Integer
-      ZeevexConcurrency::ThreadPool::FixedPool.new(bounded_size ? [spec, bounded_size].min : spec)
+      [ZeevexConcurrency::ThreadPool::FixedPool.new(bounded_size ? [spec, bounded_size].min : spec), true]
     else
       raise ArgumentError, "pool spec invalid: #{spec.inspect}"
     end
