@@ -115,7 +115,7 @@ describe ZeevexConcurrency::Util::Platform do
     supported_platforms.each do |platform|
       it 'should return a list of feature names' do
         pretend_to_be platform
-        clazz.features.should be_a(Array)
+        clazz.features.should be_a(Set)
         clazz.features.should_not be_empty
       end
       it 'should return a list of symbols' do
