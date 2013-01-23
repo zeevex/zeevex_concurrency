@@ -14,6 +14,8 @@ puts "RUNNING SPECS ON #{RUBY_DESCRIPTION}" if ENV['debug'] == 'true'
 def dump_thread_backtraces(exclude_current=false)
   if defined?(JRuby)
     Process.kill('QUIT', $$)
+    ## causing coredumps for me
+    # Process.kill('USR2', $$)
     return
   end
 
