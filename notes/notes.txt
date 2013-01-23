@@ -1,3 +1,7 @@
+Some useful articles:
+
+  http://blog.paracode.com/2012/09/07/pragmatic-concurrency-with-ruby/
+
 
   
 - ThreadLocalNamedPointer
@@ -116,3 +120,12 @@ Other refences:
   http://www.quora.com/What-are-the-trade-offs-between-effect-typing-monads-and-uniqueness-typing
   http://lambda-the-ultimate.org/node/2708
   http://en.wikipedia.org/wiki/Uniqueness_type
+
+
+==== TESTING ====
+
+How to test synchronization code?
+
+  http://c2.com/cgi/wiki?UnitTestsForSynchronizationLogic
+  http://r3t.rubyforge.org/
+  
