@@ -51,9 +51,11 @@ module ZeevexConcurrency
     def stop
       return unless @state == :started
       enqueue { @stop_requested = true }
-      unless @thread.join(1)
-        @thread.kill
-        @thread.join(0)
+      unless @thread.join(5)
+        # TODO: use Platform to test for this
+        unless defined?(JRuby)
+          Thread.new { @thread.kill; @thread.join(0) }
+        end
       end
 
       @thread = nil
