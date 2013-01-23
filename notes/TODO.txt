@@ -25,19 +25,19 @@
 ** API Design of Futures
 *** TODO double-ended Promises - one end read-only?
 *** TODO have Future include / based on a Promise?
+*** TODO recover/recoverWith from Scala - need partial fns / pattern match
+*** TODO use scoped executor/execution contexts instead of threadpools directly
+*** TODO remove set_result from future
+*** TODO method on future / promise to extract (apparently didn't finish specifying this?)
+*** TODO lazy map from Multiplex.sequence/all
 *** DONE map, flatMap from Scala/Akka
 *** DONE onSuccess, onFailure from Scala/Akka
 *** DONE translate from Scala
 *** DONE filter from Scala/Akka
 *** DONE dataflow wrappers
-*** TODO recover/recoverWith from Scala - need partial fns / pattern match
-*** TODO use scoped executor/execution contexts instead of threadpools directly
-*** TODO with_pool wrapper
-*** TODO << to insert value into promise
-*** TODO remove set_result from future
-*** TODO method on future / promise to extract
-*** TODO first_of/either should take a list rather than *list in args?
-*** TODO lazy map from Multiplex.sequence/all
+*** DONE with_pool wrapper
+*** DONE << to insert value into promise
+*** DONE first_of/either should take a list rather than *list in args?
 *** See http://www.scala-lang.org/archives/downloads/distrib/files/nightly/docs/library/index.html#scala.concurrent.Future
     and https://github.com/scala/scala/blob/b17651ed3533169d7663493bec25899923ddade1/src/library/scala/concurrent/Future.scala#L1
 
