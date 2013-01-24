@@ -192,10 +192,14 @@ module ZeevexConcurrency::ThreadPool
     #
     # @param [Proc, #call, nil] callable any object which responds to #call and returns a value
     # @param [Block] block if no callable is supplied, a block is used as the computation
+    # @return undefined
     # @yield no arguments are passed to the block or proc
     # @yieldreturn [Object] the result of the computation
     #
     def enqueue(callable = nil, &block)
+      if @stop_requested
+        return false
+      end
       @loop.enqueue _check_args(callable, block)
     end
 
@@ -401,6 +405,9 @@ module ZeevexConcurrency::ThreadPool
     # @yieldreturn [Object] the result of the computation
     #
     def enqueue(callable = nil, &block)
+      if @stop_requested
+        return false
+      end
       @queue << _check_args(callable, block)
     end
 
@@ -419,6 +426,7 @@ module ZeevexConcurrency::ThreadPool
 
                 # notify that this thread is stopping and wait for the signal to continue
                 if work.is_a?(HaltObject)
+                  # puts "thread #{Thread.current.object_id} obeying halt"
                   work.halt!
                   continue
                 end
@@ -446,8 +454,10 @@ module ZeevexConcurrency::ThreadPool
     def stop
       @mutex.synchronize do
         return unless @started
-
         @stop_requested = true
+
+        @queue.clear
+        halt_n_times(@count)
 
         # XXX: this is a temp hack and should skip thr.kill on ALL non-green-thread platforms,
         #      possibly even those with green threads (because of risk of corruption)
@@ -520,13 +530,16 @@ module ZeevexConcurrency::ThreadPool
     # So we have to ask each thread to pause until they've all paused
     #
     def join
-      halter = HaltObject.new(@count)
+      # wait until every thread has entered
+      halt_n_times(@count).wait
+    end
+
+    def halt_n_times(n)
+      halter = HaltObject.new(n)
 
       # ensure each thread gets a copy
-      @count.times { @queue << halter }
-
-      # wait until every thread has entered
-      halter.wait
+      n.times { @queue << halter }
+      halter
     end
 
     # @api private
