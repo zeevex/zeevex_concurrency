@@ -162,13 +162,15 @@ class ZeevexConcurrency::Future < ZeevexConcurrency::Delayed
   # calls are allowed.
   #
   # @param [ZeevexConcurrency::ThreadPool::Abstract] pool the pool to use
-  # @yield [] the block is executed with no arguments
+  # @yield [ZeevexConcurrency::ThreadPool::Abstract] the block is executed with no arguments
+  #    if you want to use it beyond the block's execution lifetime, be sure to
+  #    retain/release it as necessary.
   #
   def self.with_worker_pool(pool)
     old_pool = Thread.current[:_future_worker_pool]
     Thread.current[:_future_worker_pool] = pool_retain(pool)
     raise ArgumentError, "Must provide pool" unless pool && pool.respond_to?(:enqueue)
-    yield
+    yield pool
   ensure
     Thread.current[:_future_worker_pool] = old_pool
     pool_release(pool)

@@ -32,11 +32,11 @@ describe ZeevexConcurrency::Future do
     ZeevexConcurrency::Future.worker_pool = loop
   end
 
-  around :each do |ex|
-    Timeout::timeout(10) do
-      ex.run
-    end
-  end
+  # around :each do |ex|
+  #   Timeout::timeout(10) do
+  #     ex.run
+  #   end
+  # end
 
   let :pause_queue do
     Queue.new
@@ -715,6 +715,7 @@ describe ZeevexConcurrency::Future do
         end
       end
       before do
+        pause_futures
         @callable     = lambda { 200 }
         @map_callable = lambda { |x| ZeevexConcurrency.future { x + 40 } }
       end
