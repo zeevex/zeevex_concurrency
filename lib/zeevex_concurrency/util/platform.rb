@@ -95,6 +95,21 @@ module ZeevexConcurrency
           end
       end
 
+      #
+      # Query the system for the reported number of CPU cores available for work.
+      #
+      # @param [Integer] the default number of CPUs to report if unknown
+      # @return [Integer] the number of CPUs known to be in the system
+      #
+      def self.cpu_count(defcount = 1)
+        return Java::Java.lang.Runtime.getRuntime.availableProcessors if defined? Java::Java
+        return File.read('/proc/cpuinfo').scan(/^processor\s*:/).size if File.exist? '/proc/cpuinfo'
+        require 'win32ole'
+        WIN32OLE.connect("winmgmts://").ExecQuery("select * from Win32_ComputerSystem").NumberOfProcessors
+      rescue LoadError
+        Integer `sysctl -n hw.ncpu 2>/dev/null` rescue defcount
+      end
+
       private
 
       #
