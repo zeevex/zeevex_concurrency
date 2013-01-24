@@ -15,6 +15,10 @@ Combo libs:
      recursive mutex
 
 
+  https://github.com/treeder/concur - A concurrency library for Ruby
+       inspired by java.util.concurrency and Go (golang).
+       goroutines, channels, executors/threadpools, futures
+
 Thread-safe data structures:
 
   https://github.com/kaspernj/tsafe.git - threadsafe data structures

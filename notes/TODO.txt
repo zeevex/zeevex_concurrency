@@ -52,6 +52,7 @@
          (or stop threads after queue has cleared
 *** TODO min/max sized thread pool
 *** TODO pre-allocation and work-stealing between pools
+*** TODO timed and recurring events - see https://github.com/tarcieri/timers
 
 ** Clojure-like Dynamic Vars
 *** TODO binding propagation - dynamic scope can be closed over when

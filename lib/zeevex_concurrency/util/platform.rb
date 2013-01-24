@@ -113,6 +113,7 @@ module ZeevexConcurrency
         res << :cow_friendly_gc if GC.respond_to?(:copy_on_write_friendly=)
         # TODO - test this on Windows
         res << :fork if Kernel.respond_to?(:fork) && !defined?(JRuby)
+        res << :ffi  if defined?(FFI)
         res
       end
 

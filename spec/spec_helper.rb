@@ -41,24 +41,51 @@ RSpec.configure do |config|
     puts "Running spec suite on #{RUBY_VERSION}"
   end
 
+  $default_repeats = ENV.fetch('test_repeats', 1).to_i
+  $global_test_timeout = ENV.fetch('test_timeout', 60).to_i
+  
   config.around :each do |exproc|
     puts "[Running #{example.full_description}]" if ENV['debug'] == 'true'
-    
+
     completed = false
     exmetadata = exproc.metadata
     name = exmetadata.full_description
+    repeat = exmetadata.fetch(:repeat, $default_repeats || 1)
+
+    # allow a test case to have repeats disabled
+    if repeat == false
+      repeat = 1
+    end
+    if repeat > 1
+      puts "REPEATING TEST CASE #{name} #{repeat} times"
+    end
+
+    timeout = exmetadata[:test_timeout] || $global_test_timeout || 60
+
+    # if a repeat is not specified in the actual test, multiple its timeout by
+    # the repeat count - i.e., we assume that a :repeat-aware test is also
+    # setting a total timeout for all its runs, rather than just one
+
+    unless exmetadata[:repeat]
+      timeout *= repeat
+    end
+
     t_start = Time.now
     thr = Thread.new do
       begin
-        result = exproc.run
-        [result, nil]
+        done = false
+        while repeat > 0
+          result = exproc.run
+          res = [result, nil]
+          repeat -= 1
+        end
+        res
       rescue
         completed = true
         [nil, $!]
       end
     end
 
-    timeout = exmetadata[:test_timeout] || $global_test_timeout || 60
 
     if thr.join(timeout)
       (result, exception) = thr.value
@@ -70,15 +97,11 @@ RSpec.configure do |config|
       Thread.new { dump_thread_backtraces(true) }
       Thread.new { timeout(10) { thr.kill } }
       message = "example declared deadlocked after #{timeout} seconds"
-      puts "[A]"
       begin
         raise Timeout::Error, message
       rescue
-        puts "[B]"
         @example.set_exception($!, message)
-        puts "[C]"
       end
-      puts "[D]"
     end
   end
 

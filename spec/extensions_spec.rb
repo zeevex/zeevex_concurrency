@@ -44,8 +44,6 @@ describe ZeevexConcurrency::Synchronized do
     end
   end
 
-  # XXX: commenting these out as they appear to be racy
-  begin
   context 'ZeevexConcurrency.greedy_pmap' do
     context 'argument parsing' do
       it 'should require a collection as first arg' do
@@ -70,6 +68,11 @@ describe ZeevexConcurrency::Synchronized do
     it 'should process collection properly' do
       subject.pmap {|x| x*2}.should == [2,4,6]
     end
+
+    it 'should process a very large collection properly' do
+      [*1..50_000].pmap {|x| x*2}.reduce(&:+).should == 2_500_050_000
+    end
+
   end
 
   context 'Hash#pmap' do
@@ -87,6 +90,4 @@ describe ZeevexConcurrency::Synchronized do
       subject.pmap {|v| 1000+v}.to_set.should == Set.new([1500, 1230, 1099])
     end
   end
-  end if true
-  # XXX: end of commented out pmap tests
 end
