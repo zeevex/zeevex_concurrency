@@ -77,8 +77,9 @@ module ZeevexConcurrency
       # @raise NotImplementedError if the engine is not currently supported
       #
       def self.engine
+        ruby_engine = defined?(RUBY_ENGINE) ? RUBY_ENGINE : "ruby"
         @@engine ||=
-          case RUBY_ENGINE
+          case ruby_engine
           when "jruby"
             [:jruby, JRUBY_VERSION, RUBY_VERSION]
           when "ruby"
@@ -91,7 +92,7 @@ module ZeevexConcurrency
           when "mruby", "maglev", "rubymotion", "ironruby", "kiji", "opal", "goruby"
             raise NotImplementedError, "Haven't finished support for #{RUBY_ENGINE} yet"
           else
-            raise NotImplementedError, "Unknown Ruby Platform: #{RUBY_ENGINE} - #{RUBY_DESCRIPTION}"
+            raise NotImplementedError, "Unknown Ruby Platform: #{ruby_engine} - #{RUBY_DESCRIPTION}"
           end
       end
 
@@ -161,7 +162,7 @@ module ZeevexConcurrency
              :refcounting]
           else
             @@features = []
-            raise NotImplementedError, "Unsupported Ruby Platform: #{RUBY_ENGINE} - #{RUBY_DESCRIPTION}"
+            raise NotImplementedError, "Unsupported Ruby Platform: #{engine} - #{RUBY_DESCRIPTION}"
           end)
       end
 
