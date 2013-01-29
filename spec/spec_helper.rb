@@ -9,7 +9,7 @@ require 'thread'
 
 require File.expand_path(File.dirname(__FILE__) + '/proxy_shared_examples.rb')
 
-puts "RUNNING SPECS ON #{RUBY_DESCRIPTION}" if ENV['debug'] == 'true'
+puts "RUNNING SPECS ON #{RUBY_DESCRIPTION}" unless ENV['quiet'] == 'true'
 
 def dump_thread_backtraces(exclude_current=false)
   if defined?(JRuby)
@@ -37,10 +37,6 @@ trap 'TTIN' do
 end
 
 RSpec.configure do |config|
-  config.before(:suite) do
-    puts "Running spec suite on #{RUBY_VERSION}"
-  end
-
   $default_repeats = ENV.fetch('test_repeats', 1).to_i
   $global_test_timeout = ENV.fetch('test_timeout', 60).to_i
   
