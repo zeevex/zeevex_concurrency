@@ -17,7 +17,27 @@ def partitioned_map(coll, options = {}, &block)
   parts = ZeevexConcurrency::Util::Platform.cpu_count * 2
   (pool, _) = ZeevexConcurrency.thread_pool_from_spec(parts)
   pool.retain
-  # pool.start
+  batch_size = [(coll.size / parts).ceil, 1].max
+  futures = []
+  ZeevexConcurrency::Future.with_worker_pool(pool) do
+    coll.each_slice(batch_size) do |subcoll|
+      if options[:reduce]
+        fut = ZeevexConcurrency::Future.create { subcoll.map(&block).reduce(&options[:reduce])  }
+      else
+        fut = ZeevexConcurrency::Future.create { subcoll.map &block  }
+      end
+      futures << fut
+    end
+  end
+  futures.flat_map {|chunk| chunk.value }
+ensure
+  # pool && pool.stop
+  pool.release
+end
+
+def partitioned_map_zerocopy(coll, options = {}, &block)
+  parts = ZeevexConcurrency::Util::Platform.cpu_count * 2
+  (pool, _) = ZeevexConcurrency.thread_pool_from_spec(parts)
   batch_size = [(coll.size / parts).ceil, 1].max
   futures = []
   ZeevexConcurrency::Future.with_worker_pool(pool) do
@@ -30,11 +50,8 @@ def partitioned_map(coll, options = {}, &block)
 
       futures << fut
     end
+    futures.flat_map {|chunk| chunk.value }
   end
-  futures.flat_map {|chunk| chunk.value }
-ensure
-  # pool && pool.stop
-  pool.release
 end
 
 n = (ARGV[0] || 100_000).to_i
@@ -62,7 +79,7 @@ Benchmark.bmbm(10) do |x|
   end
   x.report("pmap:") do
     check [*(1..n)].pmap {|x| x*2}.reduce(&:+)
-  end
+  end  unless ENV['skip_pmap']
 end
 
 puts "\n\n** no sum **\n"
@@ -70,7 +87,9 @@ puts "\n\n** no sum **\n"
 Benchmark.bmbm(10) do |x|
   x.report("map:")     { [*(1..n)].map  {|x| x*2} }
   x.report("parmap:")  { partitioned_map([*(1..n)]) {|x|  x*2} }
-  x.report("pmap:")    { [*(1..n)].pmap {|x| x*2} }
+  unless ENV['skip_pmap']
+    x.report("pmap:")    { [*(1..n)].pmap {|x| x*2} }
+  end
 end
 
 sleep 15

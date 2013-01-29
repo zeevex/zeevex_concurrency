@@ -128,4 +128,6 @@ How to test synchronization code?
 
   http://c2.com/cgi/wiki?UnitTestsForSynchronizationLogic
   http://r3t.rubyforge.org/
-  
+  http://stackoverflow.com/questions/12159/how-should-i-unit-test-threaded-code
+  http://stackoverflow.com/questions/4418373/designing-a-test-class-for-a-custom-barrier/4427499#4427499
+
