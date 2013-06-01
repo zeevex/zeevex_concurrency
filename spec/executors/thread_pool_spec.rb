@@ -1,4 +1,4 @@
-require File.join(File.dirname(__FILE__), '../spec_helper')
+require File.expand_path(File.join(File.dirname(__FILE__), '../spec_helper'))
 require 'zeevex_concurrency/executors/thread_pool.rb'
 require 'zeevex_concurrency/executors/event_loop.rb'
 require 'timeout'
@@ -242,8 +242,10 @@ describe ZeevexConcurrency::ThreadPool do
     it_should_behave_like 'thread pool with refcounting'
 
     it 'should indicate that the pool is busy when there are tasks in the queue' do
-      (parallelism + 1).times { pool.enqueue { sleep 30 } }
-      wait_until { pool.backlog >= 1 }
+      (parallelism + 1).times { pool.enqueue { sleep 120 } }
+      puts "backlog is #{pool.backlog}"
+      wait_until { pool.backlog == 1 }
+      puts "POOL: #{pool.worker_count} workers, busy = #{pool.busy_count}, backlog is #{pool.backlog}"
       pool.should be_busy
     end
 

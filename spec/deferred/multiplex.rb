@@ -1,4 +1,4 @@
-require File.join(File.dirname(__FILE__), '../spec_helper')
+require File.expand_path(File.join(File.dirname(__FILE__), '../spec_helper'))
 require 'zeevex_concurrency/deferred/future.rb'
 require 'zeevex_concurrency/deferred/multiplex.rb'
 require 'set'
