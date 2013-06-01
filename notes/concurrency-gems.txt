@@ -34,6 +34,9 @@ pmap, parallel map:
 
   https://github.com/jatkins/peach
 
+  https://github.com/grosser/parallel
+
+
 CSP and Go-Like:
 
   https://github.com/igrigorik/agent - go-like agents
