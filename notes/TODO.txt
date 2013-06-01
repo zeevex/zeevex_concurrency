@@ -1,0 +1,73 @@
+* TODO
+
+** Delayed
+*** TODO transparent semantics - act as proxy to actual value?
+*** TODO simplify - possibly using condvars (though latch is good)
+*** TODO Simple deref function
+
+
+** Modules
+*** TODO include future/promise/force/deref functions into Kernel?
+
+** Parallelization via e.g. map
+*** TODO non-greedy pmap (for larger collections of smaller tasks
+*** TODO peach - pmap without side effects
+*** TODO pmap_unordered - results in any order
+*** TODO fork/join framework
+*** TODO map/reduce framework
+
+** Other classes
+*** TODO Double-ended queue
+*** TODO Work queue that can signal when empty / closed (for shutdown)
+*** TODO work queue wrapper around collection (for pmap)
+*** TODO tree-based work queue to handle
+
+** API Design of Futures
+*** TODO double-ended Promises - one end read-only?
+*** TODO have Future include / based on a Promise?
+*** TODO recover/recoverWith from Scala - need partial fns / pattern match
+*** TODO use scoped executor/execution contexts instead of threadpools directly
+*** TODO remove set_result from future
+*** TODO method on future / promise to extract (apparently didn't finish specifying this?)
+*** TODO lazy map from Multiplex.sequence/all
+*** DONE map, flatMap from Scala/Akka
+*** DONE onSuccess, onFailure from Scala/Akka
+*** DONE translate from Scala
+*** DONE filter from Scala/Akka
+*** DONE dataflow wrappers
+*** DONE with_pool wrapper
+*** DONE << to insert value into promise
+*** DONE first_of/either should take a list rather than *list in args?
+*** See http://www.scala-lang.org/archives/downloads/distrib/files/nightly/docs/library/index.html#scala.concurrent.Future
+    and https://github.com/scala/scala/blob/b17651ed3533169d7663493bec25899923ddade1/src/library/scala/concurrent/Future.scala#L1
+
+
+** Future optimizations
+*** TODO first_of / either should cancel all outstanding futures after satisfied
+*** TODO Multiplex should cancel all outstanding futures after satisfied
+
+
+** Thread pools
+*** TODO thread pool finalizer should stop all threads, clear queue
+         (or stop threads after queue has cleared
+*** TODO min/max sized thread pool
+*** TODO pre-allocation and work-stealing between pools
+*** TODO timed and recurring events - see https://github.com/tarcieri/timers
+
+** Clojure-like Dynamic Vars
+*** TODO binding propagation - dynamic scope can be closed over when
+    block/proc is run on another thread (e.g. on an executor)
+*** TODO cleanup thread root binding leak - when var is deallocated,
+    it does not delete any of its per-thread bindings
+
+** Testing
+*** TODO find a way to abort deadlocked rspec examples without blowing
+    up rspec (it gives some error about << on nil if a Timeout error
+    is raised)
+*** TODO a long running test with scheduler fuzzing
+*** TODO check out mutation gems (e.g. https://github.com/mbj/mutant)
+*** TODO check out concurrency test helper gems (http://r3t.rubyforge.org/)
+
+
+# -*- mode: org-mode; -*-
+   

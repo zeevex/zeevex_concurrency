@@ -17,14 +17,20 @@ Gem::Specification.new do |gem|
   gem.test_files    = gem.files.grep(%r{^(test|spec|features)/})
   gem.require_paths = ["lib"]
 
-  gem.add_dependency 'zeevex_proxy'
+  # used in deferreds especially
   gem.add_dependency 'countdownlatch', '~> 1.0.0'
+
+  # used all over the place
   gem.add_dependency 'atomic', '~> 1.0.0'
+  gem.add_dependency 'zeevex_proxy'
+
+  # weak references for Var
+  gem.add_dependency 'ref'
 
   ## other headius utils
   # s.add_dependency 'thread_safe'
 
-  gem.add_development_dependency 'rspec', '~> 2.9.0'
+  gem.add_development_dependency 'rspec', '~> 2.12.0'
   gem.add_development_dependency 'rake'
   gem.add_development_dependency 'pry'
 end

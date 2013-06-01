@@ -1,4 +1,4 @@
-require File.join(File.dirname(__FILE__), '../spec_helper')
+require File.expand_path(File.join(File.dirname(__FILE__), '../spec_helper'))
 require 'zeevex_concurrency/executors/thread_pool.rb'
 require 'zeevex_concurrency/executors/event_loop.rb'
 require 'timeout'
@@ -192,7 +192,7 @@ describe ZeevexConcurrency::ThreadPool do
 
   shared_examples_for 'thread pool control' do
     it 'should allow enqueueing after a stop/start' do
-      pending 'broken on jruby, and really in general'
+      # pending 'broken on jruby, and really in general'
       pool.stop
       pool.start
       pool.enqueue do
@@ -201,6 +201,28 @@ describe ZeevexConcurrency::ThreadPool do
       Timeout::timeout(5) do
         queue.pop.should == "ran"
       end
+    end
+  end
+
+  shared_examples_for 'thread pool with refcounting' do
+    subject { pool }
+    it { should respond_to(:retain) }
+    it { should respond_to(:release) }
+    it { should respond_to(:refcount) }
+    it 'should be created with a refcount of 0' do
+      subject.refcount.should == 0
+    end
+    it 'should not be stopped if retained' do
+      subject.should_not_receive(:stop)
+      subject.retain
+    end
+    it 'should not be stopped if retained twice and released' do
+      subject.should_not_receive(:stop)
+      subject.retain.retain.release
+    end
+    it 'should be stopped if retained and released' do
+      subject.should_receive(:stop)
+      subject.retain.release
     end
   end
 
@@ -217,10 +239,13 @@ describe ZeevexConcurrency::ThreadPool do
     it_should_behave_like 'thread pool control'
     it_should_behave_like 'thread pool with parallel execution'
     it_should_behave_like 'thread pool with task queue'
+    it_should_behave_like 'thread pool with refcounting'
 
     it 'should indicate that the pool is busy when there are tasks in the queue' do
-      (parallelism + 1).times { pool.enqueue { sleep 30 } }
+      (parallelism + 1).times { pool.enqueue { sleep 120 } }
+      puts "backlog is #{pool.backlog}"
       wait_until { pool.backlog == 1 }
+      puts "POOL: #{pool.worker_count} workers, busy = #{pool.busy_count}, backlog is #{pool.backlog}"
       pool.should be_busy
     end
 
@@ -244,6 +269,7 @@ describe ZeevexConcurrency::ThreadPool do
     it_should_behave_like 'thread pool initialization'
     it_should_behave_like 'thread pool running tasks'
     it_should_behave_like 'thread pool control'
+    it_should_behave_like 'thread pool with refcounting'
   end
 
   context 'ThreadPerJobPool' do
@@ -258,6 +284,7 @@ describe ZeevexConcurrency::ThreadPool do
     it_should_behave_like 'thread pool running tasks'
     it_should_behave_like 'thread pool control'
     it_should_behave_like 'thread pool with parallel execution'
+    it_should_behave_like 'thread pool with refcounting'
   end
 
   context 'EventLoopAdapter' do
@@ -275,7 +302,7 @@ describe ZeevexConcurrency::ThreadPool do
     it_should_behave_like 'thread pool running tasks'
     it_should_behave_like 'thread pool control'
     it_should_behave_like 'thread pool with task queue'
+    it_should_behave_like 'thread pool with refcounting'
   end
-
 end
 

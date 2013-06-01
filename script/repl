@@ -2,9 +2,34 @@
 $:.unshift File.join(File.dirname(__FILE__), "../lib")
 require 'pry'
 require 'zeevex_concurrency'
-require 'zeevex_concurrency/deferred/delayed'
+
+# deferred classes
+require 'zeevex_concurrency/delayed'
 require 'zeevex_concurrency/deferred/future'
 require 'zeevex_concurrency/deferred/promise'
 require 'zeevex_concurrency/deferred/delay'
+require 'zeevex_concurrency/deferred/multiplex'
+require 'zeevex_concurrency/deferred/dataflow'
+
+# extensions for pmap etc
+require 'zeevex_concurrency/extensions'
+
+# thread pool and event loops
+require 'zeevex_concurrency/executors/thread_pool'
+require 'zeevex_concurrency/executors/event_loop'
+
+# scope - TBOs and clojure Vars
+require 'zeevex_concurrency/scope/thread_bound_object'
+require 'zeevex_concurrency/scope/var'
+
+# locking
+require 'zeevex_concurrency/locks/synchronized'
+require 'zeevex_concurrency/locks/read_write_lock'
+
+# utility classes
+require 'zeevex_concurrency/util/logging'
+
+require 'logger'
+ZeevexConcurrency.logger = Logger.new(STDERR)
 
 binding.pry

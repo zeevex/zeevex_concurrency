@@ -1,4 +1,4 @@
-require File.join(File.dirname(__FILE__), 'spec_helper')
+require File.expand_path(File.join(File.dirname(__FILE__), 'spec_helper'))
 require 'zeevex_concurrency/extensions.rb'
 require 'thread'
 
@@ -29,15 +29,18 @@ describe ZeevexConcurrency::Synchronized do
       ZeevexConcurrency::ThreadPool::FixedPool.should_not_receive(:new)
       ZeevexConcurrency::Future.should_not_receive :worker_pool
       pool = Object.new
-      ZeevexConcurrency.thread_pool_from_spec(-1, pool).should == pool
+      ZeevexConcurrency.thread_pool_from_spec(-1, pool).should == [pool, false]
     end
     it 'should treat 0 as fully concurrent processing of all elements' do
       ZeevexConcurrency::ThreadPool::FixedPool.should_receive(:new).with(100)
       ZeevexConcurrency.thread_pool_from_spec 0, nil, 100
     end
-    it 'should accept and use a thread pool' do
+    it 'should accept and use a thread pool, marking it as not newly created' do
       pool = ZeevexConcurrency::ThreadPool::FixedPool.new(1)
-      ZeevexConcurrency.thread_pool_from_spec(pool).should == pool
+      ZeevexConcurrency.thread_pool_from_spec(pool).should == [pool, false]
+    end
+    it 'should mark a newly created pool' do
+      ZeevexConcurrency.thread_pool_from_spec(nil)[1].should == true
     end
   end
 
@@ -65,6 +68,11 @@ describe ZeevexConcurrency::Synchronized do
     it 'should process collection properly' do
       subject.pmap {|x| x*2}.should == [2,4,6]
     end
+
+    it 'should process a very large collection properly' do
+      [*1..50_000].pmap {|x| x*2}.reduce(&:+).should == 2_500_050_000
+    end
+
   end
 
   context 'Hash#pmap' do

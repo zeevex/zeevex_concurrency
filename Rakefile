@@ -1,5 +1,4 @@
-require "bundler/gem_tasks"
-
+require 'bundler/gem_tasks'
 require 'rspec/core/rake_task'
 
 RSpec::Core::RakeTask.new(:spec)
@@ -28,3 +27,14 @@ namespace :spec do
 end
 
 task :default => 'spec'
+
+begin
+  require 'yard'
+rescue LoadError
+end
+if defined?(YARD)
+  YARD::Rake::YardocTask.new do |t|
+    t.files   = ['lib/**/*.rb']   # optional
+    # t.options = ['--any', '--extra', '--opts'] # optional
+end
+end

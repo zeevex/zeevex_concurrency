@@ -1,10 +1,10 @@
-require File.join(File.dirname(__FILE__), '../spec_helper')
+require File.expand_path(File.join(File.dirname(__FILE__), '../spec_helper'))
 require 'zeevex_concurrency/util/refcount.rb'
 require 'thread'
 
-describe ZeevexConcurrency::Refcount do
+describe ZeevexConcurrency::Util::Refcount do
   class Refcounted
-    include ZeevexConcurrency::Refcount
+    include ZeevexConcurrency::Util::Refcount
 
     def initialize(&destroy_proc)
       @destroy_proc = destroy_proc

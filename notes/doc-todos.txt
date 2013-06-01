@@ -1,0 +1,24 @@
+
+- README
+
+
+More usage notes:
+
+- ThreadBoundObject
+- Var
+- Multiplex
+- all Deferreds (also in REAMDE)
+- thread pools
+- Synchronized
+
+lesser:
+
+- Proxy
+
+
+DONE:
+
+- deferreds: Promise, Delay
+- Dataflow
+- Multiplex
+- All the thread pools

@@ -1,7 +1,9 @@
 module ZeevexConcurrency
-  class NilLogger
-    def method_missing(symbol, *args)
-      nil
+  module Util
+    class NilLogger
+      def method_missing(symbol, *args)
+        nil
+      end
     end
   end
 end

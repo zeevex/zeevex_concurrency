@@ -1,0 +1,133 @@
+Some useful articles:
+
+  http://blog.paracode.com/2012/09/07/pragmatic-concurrency-with-ruby/
+
+
+  
+- ThreadLocalNamedPointer
+  - ability to bind well-known pointer names which are thread-local
+  - e.g. ThreadLocalNamedPointer.new("db_connection") { make_value() }
+    the block provides a value if thread does not have local value
+  - proxy or .get(), not sure yet
+
+- Clojure like DynamicVar
+  - DONE - global value bound at creation time
+  - DONE - can be rebound in (thread-local) scope
+  - DONE - can be set to per-thread value
+  - ?? is scope carried or lost if block/proc is run on another
+    thread, e.g. via runloop?
+       currently yes
+ 
+  - See http://clojure.org/vars
+    See  http://dev.clojure.org/display/design/Improve+Binding
+    See http://cirw.in/blog/lspace for an implementation
+  
+- Channels like Go, Rust, etc.
+
+See https://github.com/igrigorik/agent
+    http://www.igvita.com/2010/12/02/concurrency-with-actors-goroutines-ruby/
+    http://golang.org/doc/effective_go.html#channels
+    https://github.com/jordansissel/message-passing - bench
+    
+Some lower level bits:
+
+- R/W Lock
+   http://stackoverflow.com/questions/1080993/pure-ruby-concurrent-hash
+   https://github.com/alexdowad/showcase/blob/master/ruby-threads/read_write_lock.rb
+   http://codereview.stackexchange.com/questions/9038/read-write-lock-implementation-for-ruby
+- way to have an event-loop like thread know to shut itself down, e.g.
+
+  runloop @queue, :process  => lambda {|event| …},
+                  :shutdown => lambda {|event| …},
+                  :shutdown => lambda {|event| …}
+
+  This way we wouldn't need Thread.kill
+  Existing EventLoop class could use select on [event_queue, Thread.signalqueue]
+
+- standard semaphore
+- Barrier / CyclicBarrier ala java.util.concurrent
+- Condition vars - Ruby has these, but make 'em selectable / observable?
+- Atomic vars - using 'atomic' gem, but should they also be observable?
+- First-there-wins thingy
+    - not sure what i'm thinking here actually, but really wanted something
+      around this concept in Future/Promise/Delay development
+    - maybe a write-once variable, blocking or null-evaluating other attempts, e.g.
+      @var = WriteOnceVar.new
+      success = @var.set do
+                  Time.now
+                end
+      would only set once, from one thread; all other threads would see success=false,
+      
+      API could also return value of var, cached or recently calculated, though that
+      seems to lose info vs. returning whether we wrote.
+      
+      maybe also an async version so other writers don't wait on result; @var.value
+      *would* wait on result
+- Wrapper that would only allow an action to happen N time - generalization of WriteOnceVar
+  to ExecuteUpToNTimes
+- SizedQueue w/non-blocking full? & put(item, wait)
+- Selectable / observable sized queue - i.e. notify when empty or full
+      - condvar based?
+
+- fit multiplexer into some kind of multi-select or vice versa
+   - along with queues
+   - and channels
+   - and locks
+- Clojure primitives
+  - Var
+  - Atom
+  - Agent
+    update / send!
+- concurrent hashmap: http://stackoverflow.com/questions/1080993/pure-ruby-concurrent-hash
+- Functional data structures - see Hamster gem (HAMTs)
+
+Other refences:
+
+- Scala Promises and Futures: http://docs.scala-lang.org/sips/pending/futures-promises.html
+- JRuby concurrency: https://github.com/jruby/jruby/wiki/Concurrency-in-jruby
+- Ruby monitors: http://therealadam.com/2012/07/05/protect-that-state-locks-monitors-and-atomics/
+- http://blog.carbonfive.com/2011/10/11/a-modern-guide-to-threads/ - Modern Guide to [Ruby] Threads
+- http://moonbase.rydia.net/mental/blog/programming/concurrency-five-ways.html
+- http://news.ycombinator.com/item?id=2253344
+- http://merbist.com/2011/10/03/about-concurrency-and-the-gil/
+- https://blog.engineyard.com/2011/concurrency-in-jruby/
+- http://japgolly.blogspot.com/2012/04/ruby-mutex-reentrancy.html
+
+==== DONE ====
+  
+- Multiplexer - wait on multiple promises, futures, or others that are Observable
+   and invoke the update() method with self as the first arg
+  
+- ThreadBoundObject 
+  - proxy for an object that is bound to a thread
+  - can be explicitly transferred via .move(dest_thread)
+  - can be sent across a channel, and is released from sending thread
+    - automatically bound to NoThreadAccess on send - e.g. it's not
+      unbound, it's in-channel and NOBODY should have it
+    - automatically bound on receive (even if not otherwise accessed)
+  - method / static function to check TBO status
+    - bound / unbound / transferred / owned
+  - can be unbound, and auto-binds to thread on first reference
+  - exception on cross-thread access
+  
+  See:
+  
+  http://static.rust-lang.org/doc/tutorial.html#boxes-and-pointers
+  http://static.rust-lang.org/doc/rust.html#pointer-types
+  Go channels
+  http://www.drdobbs.com/cpp/c11-uniqueptr/240002708
+  http://c2.com/cgi/wiki?UniqueType
+  http://www.quora.com/What-are-the-trade-offs-between-effect-typing-monads-and-uniqueness-typing
+  http://lambda-the-ultimate.org/node/2708
+  http://en.wikipedia.org/wiki/Uniqueness_type
+
+
+==== TESTING ====
+
+How to test synchronization code?
+
+  http://c2.com/cgi/wiki?UnitTestsForSynchronizationLogic
+  http://r3t.rubyforge.org/
+  http://stackoverflow.com/questions/12159/how-should-i-unit-test-threaded-code
+  http://stackoverflow.com/questions/4418373/designing-a-test-class-for-a-custom-barrier/4427499#4427499
+
