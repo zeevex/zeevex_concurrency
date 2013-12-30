@@ -306,7 +306,9 @@ module ZeevexConcurrency::ThreadPool
         callable.call
         @busy_count.update {|x| x - 1}
       end
-      @group.add(thr)
+      @mutex.synchronize do
+        @group.add(thr)
+      end
     end
 
     #
@@ -321,7 +323,11 @@ module ZeevexConcurrency::ThreadPool
     # that tasks are not enqueued while the calling thread is waiting.
     #
     def join
-      @group.list.dup.each do |thr|
+      thread_list = @mutex.synchronize do
+        @group.list.dup
+      end
+
+      thread_list.dup.each do |thr|
         thr.join
       end
       true
