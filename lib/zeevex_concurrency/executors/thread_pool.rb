@@ -1,6 +1,7 @@
 require 'zeevex_concurrency'
 require 'zeevex_concurrency/executors/event_loop'
 require 'zeevex_concurrency/util/refcount'
+require 'zeevex_concurrency/util/platform'
 require 'countdownlatch'
 require 'thread'
 require 'atomic'
@@ -305,7 +306,9 @@ module ZeevexConcurrency::ThreadPool
         callable.call
         @busy_count.update {|x| x - 1}
       end
-      @group.add(thr)
+      @mutex.synchronize do
+        @group.add(thr)
+      end
     end
 
     #
@@ -320,7 +323,11 @@ module ZeevexConcurrency::ThreadPool
     # that tasks are not enqueued while the calling thread is waiting.
     #
     def join
-      @group.list.dup.each do |thr|
+      thread_list = @mutex.synchronize do
+        @group.list.dup
+      end
+
+      thread_list.dup.each do |thr|
         thr.join
       end
       true
@@ -576,11 +583,6 @@ module ZeevexConcurrency::ThreadPool
   # Return the number of CPUs reported by the system
   #
   def self.cpu_count
-    return Java::Java.lang.Runtime.getRuntime.availableProcessors if defined? Java::Java
-    return File.read('/proc/cpuinfo').scan(/^processor\s*:/).size if File.exist? '/proc/cpuinfo'
-    require 'win32ole'
-    WIN32OLE.connect("winmgmts://").ExecQuery("select * from Win32_ComputerSystem").NumberOfProcessors
-  rescue LoadError
-    Integer `sysctl -n hw.ncpu 2>/dev/null` rescue 1
+    ZeevexConcurrency::Util::Platform.cpu_count
   end
 end

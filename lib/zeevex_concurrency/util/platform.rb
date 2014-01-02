@@ -108,7 +108,8 @@ module ZeevexConcurrency
         require 'win32ole'
         WIN32OLE.connect("winmgmts://").ExecQuery("select * from Win32_ComputerSystem").NumberOfProcessors
       rescue LoadError
-        Integer `sysctl -n hw.ncpu 2>/dev/null` rescue defcount
+        # for OS X
+        Integer `/usr/sbin/sysctl -n hw.ncpu 2>/dev/null` rescue defcount
       end
 
       private
